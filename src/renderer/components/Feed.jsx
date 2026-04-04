@@ -140,7 +140,17 @@ function NudgeCard({ item, index, onLearnMore, onSave }) {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-2">
+        {item.podcast_url && (
+          <a
+            href={item.podcast_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-600/10 text-violet-400 hover:bg-violet-600/20 border border-violet-500/20 transition-colors no-underline"
+          >
+            🎙️ Listen to Episode
+          </a>
+        )}
         <button
           onClick={() =>
             onLearnMore({
@@ -151,9 +161,10 @@ function NudgeCard({ item, index, onLearnMore, onSave }) {
               quote: item.quote,
               advice: item.advice,
               tags: item.tags,
+              podcast_url: item.podcast_url,
             })
           }
-          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-600/10 text-violet-400 hover:bg-violet-600/20 border border-violet-500/20 transition-colors"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800/50 text-zinc-300 hover:bg-zinc-800 border border-zinc-700/50 transition-colors"
         >
           Learn More
         </button>

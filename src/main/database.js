@@ -218,7 +218,7 @@ function getNudgesShownToday() {
 function getNudgeHistory(limit = 50) {
   return db
     .prepare(
-      `SELECT nh.*, kb.framework, kb.guest, kb.advice, kb.quote, kb.episode, kb.tags
+      `SELECT nh.*, kb.framework, kb.guest, kb.advice, kb.quote, kb.episode, kb.tags, kb.podcast_url
        FROM nudge_history nh
        JOIN knowledge_base kb ON nh.knowledge_id = kb.id
        ORDER BY nh.shown_at DESC
