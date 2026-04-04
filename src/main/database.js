@@ -1,8 +1,10 @@
 const path = require("path");
+const fs = require("fs");
 const { app } = require("electron");
 const Database = require("better-sqlite3");
 const { seedEntries } = require("./seedData");
 
+const APP_VERSION = "1.0.0";
 let db = null;
 
 function getDbPath() {
@@ -11,7 +13,31 @@ function getDbPath() {
 }
 
 function initDatabase() {
-  db = new Database(getDbPath());
+  const dbPath = getDbPath();
+
+  // Check if DB exists and if it's from a previous version
+  // If version mismatch, delete old DB so user gets fresh onboarding + seed data
+  if (fs.existsSync(dbPath)) {
+    try {
+      const oldDb = new Database(dbPath, { readonly: true });
+      const row = oldDb.prepare("SELECT value FROM settings WHERE key = 'app_version'").get();
+      oldDb.close();
+      if (!row || row.value !== APP_VERSION) {
+        // Version mismatch or no version — fresh install over old data
+        fs.unlinkSync(dbPath);
+        // Also clean up WAL/SHM files
+        try { fs.unlinkSync(dbPath + "-wal"); } catch {}
+        try { fs.unlinkSync(dbPath + "-shm"); } catch {}
+      }
+    } catch {
+      // DB is corrupt or missing settings table — delete and start fresh
+      try { fs.unlinkSync(dbPath); } catch {}
+      try { fs.unlinkSync(dbPath + "-wal"); } catch {}
+      try { fs.unlinkSync(dbPath + "-shm"); } catch {}
+    }
+  }
+
+  db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
 
   db.exec(`
@@ -98,6 +124,7 @@ function initDefaultSettings() {
     theme: "system",
     api_key: "",
     api_provider: "openai",
+    app_version: APP_VERSION,
   };
 
   const upsert = db.prepare(

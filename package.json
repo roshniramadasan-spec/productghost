@@ -26,6 +26,9 @@
       "target": "nsis",
       "icon": "assets/icon.png"
     },
+    "nsis": {
+      "deleteAppDataOnUninstall": true
+    },
     "mac": {
       "target": "dmg",
       "icon": "assets/icon.png"
