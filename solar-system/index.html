@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solar System Explorer 🚀</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>🚀 Solar System Explorer</h1>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="explore">🪐 Explore</button>
+      <button class="tab-btn" data-tab="compare">📏 Compare Sizes</button>
+      <button class="tab-btn" data-tab="quiz">🧠 Quiz</button>
+    </nav>
+  </header>
+
+  <!-- ============ EXPLORE TAB ============ -->
+  <main id="tab-explore" class="tab-panel active">
+    <canvas id="space"></canvas>
+
+    <div class="controls">
+      <button id="btn-pause" class="ctrl-btn" title="Pause / Play">⏸️</button>
+      <label class="speed-label">
+        Speed
+        <input type="range" id="speed" min="0" max="4" step="1" value="2" />
+        <span id="speed-value">10 days/sec</span>
+      </label>
+      <label class="toggle"><input type="checkbox" id="show-labels" checked /> Names</label>
+      <label class="toggle"><input type="checkbox" id="show-orbits" checked /> Orbits</label>
+      <span id="sim-clock" class="sim-clock">Day 0</span>
+    </div>
+
+    <div id="fact-ticker" class="fact-ticker">
+      <span id="ticker-text">💡 Did you know? Click any planet to learn all about it!</span>
+    </div>
+
+    <aside id="info-panel" class="info-panel closed">
+      <button id="close-panel" class="close-btn" aria-label="Close">✕</button>
+      <div class="panel-header">
+        <div id="panel-icon" class="panel-icon"></div>
+        <div>
+          <h2 id="panel-name"></h2>
+          <p id="panel-tagline" class="tagline"></p>
+        </div>
+      </div>
+      <table class="stats">
+        <tr><th>🔭 Type</th><td id="stat-type"></td></tr>
+        <tr><th>📐 Diameter</th><td id="stat-diameter"></td></tr>
+        <tr><th>☀️ Distance from Sun</th><td id="stat-distance"></td></tr>
+        <tr><th>🌡️ Temperature</th><td id="stat-temp"></td></tr>
+        <tr><th>🌅 Length of a day</th><td id="stat-day"></td></tr>
+        <tr><th>🎂 Length of a year</th><td id="stat-year"></td></tr>
+        <tr><th>🌙 Moons</th><td id="stat-moons"></td></tr>
+        <tr><th>⚖️ Your weight here</th><td id="stat-gravity"></td></tr>
+      </table>
+      <h3>✨ Fun facts</h3>
+      <ul id="panel-facts"></ul>
+    </aside>
+  </main>
+
+  <!-- ============ COMPARE TAB ============ -->
+  <main id="tab-compare" class="tab-panel">
+    <div class="compare-wrap">
+      <h2>How big are the planets, really?</h2>
+      <p class="compare-note">
+        These circles are drawn to <strong>true scale</strong> — Jupiter really is that
+        much bigger than Mercury! And the Sun? It's so enormous that about
+        <strong>1,300,000 Earths</strong> could fit inside it. 🤯
+      </p>
+      <div id="size-row" class="size-row"></div>
+      <div class="sun-strip">
+        <div class="sun-arc"></div>
+        <p>☀️ This curve is the edge of the Sun at the same scale. It wouldn't even fit on 15 screens!</p>
+      </div>
+      <h2 style="margin-top:2rem">How far away are they?</h2>
+      <p class="compare-note">
+        Space is mostly... space! Distances below are to scale (sizes are not).
+        Light from the Sun takes <strong>8 minutes</strong> to reach Earth and over
+        <strong>4 hours</strong> to reach Neptune.
+      </p>
+      <div id="distance-strip" class="distance-strip"></div>
+    </div>
+  </main>
+
+  <!-- ============ QUIZ TAB ============ -->
+  <main id="tab-quiz" class="tab-panel">
+    <div class="quiz-wrap">
+      <div id="quiz-start" class="quiz-card">
+        <h2>🧠 Space Cadet Quiz</h2>
+        <p>8 questions about the solar system. Explore the planets first, then test yourself!</p>
+        <button id="btn-start-quiz" class="big-btn">Start Quiz 🚀</button>
+        <p id="best-score" class="best-score"></p>
+      </div>
+      <div id="quiz-question" class="quiz-card hidden">
+        <p id="quiz-progress" class="quiz-progress"></p>
+        <h2 id="question-text"></h2>
+        <div id="answers" class="answers"></div>
+        <p id="quiz-feedback" class="quiz-feedback"></p>
+        <button id="btn-next" class="big-btn hidden">Next ➡️</button>
+      </div>
+      <div id="quiz-result" class="quiz-card hidden">
+        <h2 id="result-title"></h2>
+        <p id="result-text"></p>
+        <button id="btn-retry" class="big-btn">Play Again 🔁</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/simulation.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>
