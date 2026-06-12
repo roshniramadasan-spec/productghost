@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Solar System Explorer 🚀</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Solar System Explorer</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <header class="topbar">
-    <h1>🚀 Solar System Explorer</h1>
+    <h1>Solar System Explorer</h1>
     <nav class="tabs">
-      <button class="tab-btn active" data-tab="explore">🪐 Explore</button>
-      <button class="tab-btn" data-tab="compare">📏 Compare Sizes</button>
-      <button class="tab-btn" data-tab="quiz">🧠 Quiz</button>
+      <button class="tab-btn active" data-tab="explore">Explore</button>
+      <button class="tab-btn" data-tab="compare">Compare Sizes</button>
+      <button class="tab-btn" data-tab="quiz">Quiz</button>
     </nav>
   </header>
 
@@ -20,20 +20,41 @@
   <main id="tab-explore" class="tab-panel active">
     <canvas id="space"></canvas>
 
+    <button id="btn-back" class="back-btn hidden">
+      <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Solar System
+    </button>
+
+    <div id="gesture-hint" class="gesture-hint">
+      Drag to spin &nbsp;·&nbsp; Pinch or scroll to zoom &nbsp;·&nbsp; Tap a planet to visit it
+    </div>
+
     <div class="controls">
-      <button id="btn-pause" class="ctrl-btn" title="Pause / Play">⏸️</button>
+      <button id="btn-pause" class="icon-btn" title="Pause / Play">
+        <svg id="icon-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <svg id="icon-play" class="hidden" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+      </button>
       <label class="speed-label">
         Speed
         <input type="range" id="speed" min="0" max="4" step="1" value="2" />
         <span id="speed-value">10 days/sec</span>
       </label>
+      <button id="btn-zoom-out" class="icon-btn" title="Zoom out">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
+      </button>
+      <button id="btn-zoom-in" class="icon-btn" title="Zoom in">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      </button>
+      <button id="btn-reset" class="icon-btn" title="Reset view">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
+      </button>
       <label class="toggle"><input type="checkbox" id="show-labels" checked /> Names</label>
       <label class="toggle"><input type="checkbox" id="show-orbits" checked /> Orbits</label>
       <span id="sim-clock" class="sim-clock">Day 0</span>
     </div>
 
     <div id="fact-ticker" class="fact-ticker">
-      <span id="ticker-text">💡 Did you know? Click any planet to learn all about it!</span>
+      <span id="ticker-text">Tip: drag to spin the solar system, pinch or scroll to zoom, and tap any planet to visit it up close.</span>
     </div>
 
     <aside id="info-panel" class="info-panel closed">
@@ -46,16 +67,16 @@
         </div>
       </div>
       <table class="stats">
-        <tr><th>🔭 Type</th><td id="stat-type"></td></tr>
-        <tr><th>📐 Diameter</th><td id="stat-diameter"></td></tr>
-        <tr><th>☀️ Distance from Sun</th><td id="stat-distance"></td></tr>
-        <tr><th>🌡️ Temperature</th><td id="stat-temp"></td></tr>
-        <tr><th>🌅 Length of a day</th><td id="stat-day"></td></tr>
-        <tr><th>🎂 Length of a year</th><td id="stat-year"></td></tr>
-        <tr><th>🌙 Moons</th><td id="stat-moons"></td></tr>
-        <tr><th>⚖️ Your weight here</th><td id="stat-gravity"></td></tr>
+        <tr><th>Type</th><td id="stat-type"></td></tr>
+        <tr><th>Diameter</th><td id="stat-diameter"></td></tr>
+        <tr><th>Distance from Sun</th><td id="stat-distance"></td></tr>
+        <tr><th>Temperature</th><td id="stat-temp"></td></tr>
+        <tr><th>Length of a day</th><td id="stat-day"></td></tr>
+        <tr><th>Length of a year</th><td id="stat-year"></td></tr>
+        <tr><th>Moons</th><td id="stat-moons"></td></tr>
+        <tr><th>Your weight here</th><td id="stat-gravity"></td></tr>
       </table>
-      <h3>✨ Fun facts</h3>
+      <h3>Fun facts</h3>
       <ul id="panel-facts"></ul>
     </aside>
   </main>
@@ -67,12 +88,12 @@
       <p class="compare-note">
         These circles are drawn to <strong>true scale</strong> — Jupiter really is that
         much bigger than Mercury! And the Sun? It's so enormous that about
-        <strong>1,300,000 Earths</strong> could fit inside it. 🤯
+        <strong>1,300,000 Earths</strong> could fit inside it.
       </p>
       <div id="size-row" class="size-row"></div>
       <div class="sun-strip">
         <div class="sun-arc"></div>
-        <p>☀️ This curve is the edge of the Sun at the same scale. It wouldn't even fit on 15 screens!</p>
+        <p>This curve is the edge of the Sun at the same scale. It wouldn't even fit on 15 screens!</p>
       </div>
       <h2 style="margin-top:2rem">How far away are they?</h2>
       <p class="compare-note">
@@ -88,9 +109,9 @@
   <main id="tab-quiz" class="tab-panel">
     <div class="quiz-wrap">
       <div id="quiz-start" class="quiz-card">
-        <h2>🧠 Space Cadet Quiz</h2>
+        <h2>Space Cadet Quiz</h2>
         <p>8 questions about the solar system. Explore the planets first, then test yourself!</p>
-        <button id="btn-start-quiz" class="big-btn">Start Quiz 🚀</button>
+        <button id="btn-start-quiz" class="big-btn">Start Quiz</button>
         <p id="best-score" class="best-score"></p>
       </div>
       <div id="quiz-question" class="quiz-card hidden">
@@ -98,12 +119,12 @@
         <h2 id="question-text"></h2>
         <div id="answers" class="answers"></div>
         <p id="quiz-feedback" class="quiz-feedback"></p>
-        <button id="btn-next" class="big-btn hidden">Next ➡️</button>
+        <button id="btn-next" class="big-btn hidden">Next</button>
       </div>
       <div id="quiz-result" class="quiz-card hidden">
         <h2 id="result-title"></h2>
         <p id="result-text"></p>
-        <button id="btn-retry" class="big-btn">Play Again 🔁</button>
+        <button id="btn-retry" class="big-btn">Play Again</button>
       </div>
     </div>
   </main>

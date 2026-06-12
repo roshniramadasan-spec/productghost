@@ -1,8 +1,11 @@
-// All facts an 11-year-old explorer needs, in one place.
+// All facts a young explorer needs, in one place.
 // orbitDays = real orbital period in Earth days (drives the animation speed).
 // orbitFrac = fraction of the canvas radius used for the orbit (compressed, not to scale).
-// drawRadius = on-screen pixel radius (not to scale — real scale would be invisible!).
+// drawRadius = on-screen size in world units (not to scale — real scale would be invisible!).
 // surfaceGravity = relative to Earth (used for the "your weight here" stat).
+// moons = major moons shown in the close-up view:
+//   period in Earth days (negative = orbits backwards), dist in planet radii (display),
+//   r = display size, color.
 
 const SUN = {
   name: "Sun",
@@ -85,6 +88,9 @@ const PLANETS = [
     orbitFrac: 0.30,
     drawRadius: 9,
     colors: ["#9bd1ff", "#3f8fd2", "#1b4f8a"],
+    moonsList: [
+      { name: "Moon", period: 27.3, dist: 3.4, r: 2.6, color: ["#e8e8e8", "#b5b5b5", "#7d7d7d"] }
+    ],
     facts: [
       "About 71% of Earth's surface is covered by water.",
       "Earth is the only planet not named after a Greek or Roman god.",
@@ -107,6 +113,10 @@ const PLANETS = [
     orbitFrac: 0.38,
     drawRadius: 7,
     colors: ["#f0a878", "#d1603d", "#8f3a22"],
+    moonsList: [
+      { name: "Phobos", period: 0.32, dist: 2.6, r: 1.5, color: ["#b8a89a", "#8f8074", "#5f554c"] },
+      { name: "Deimos", period: 1.26, dist: 3.8, r: 1.3, color: ["#cfc2b4", "#a39684", "#6e6557"] }
+    ],
     facts: [
       "Mars is red because its soil is full of rusty iron dust.",
       "It has the tallest volcano in the solar system — Olympus Mons, 3× taller than Mount Everest!",
@@ -129,6 +139,14 @@ const PLANETS = [
     orbitFrac: 0.52,
     drawRadius: 20,
     colors: ["#f3e2c7", "#d9a86c", "#a5703f"],
+    bands: ["#e9d9bd", "#c9a06a", "#e6cfa6", "#b3814f", "#e3d3b5", "#c49a66", "#d9c39c"],
+    spot: true,
+    moonsList: [
+      { name: "Io",       period: 1.77,  dist: 2.1, r: 2.6, color: ["#f2e394", "#d9b853", "#a8802e"] },
+      { name: "Europa",   period: 3.55,  dist: 2.8, r: 2.3, color: ["#efe6d6", "#cbb89e", "#94816a"] },
+      { name: "Ganymede", period: 7.15,  dist: 3.7, r: 3.3, color: ["#b5a797", "#9b8d7d", "#6c6155"] },
+      { name: "Callisto", period: 16.69, dist: 4.7, r: 2.9, color: ["#9a8d7e", "#7a6f63", "#4f463d"] }
+    ],
     facts: [
       "The Great Red Spot is a storm bigger than Earth that has raged for over 300 years.",
       "Jupiter has no solid surface — you couldn't stand on it!",
@@ -152,6 +170,13 @@ const PLANETS = [
     drawRadius: 17,
     hasRings: true,
     colors: ["#f7ecca", "#e0c084", "#b08e4f"],
+    bands: ["#f2e6c4", "#dec48e", "#ecd9ae", "#cfae72", "#e8d7ad"],
+    moonsList: [
+      { name: "Mimas",     period: 0.94,  dist: 2.9, r: 1.5, color: ["#e8e8e8", "#bcbcbc", "#8a8a8a"] },
+      { name: "Enceladus", period: 1.37,  dist: 3.4, r: 1.8, color: ["#f4f8fa", "#d3dde2", "#9fb0b8"] },
+      { name: "Rhea",      period: 4.52,  dist: 4.0, r: 2.1, color: ["#dcdcdc", "#b0b0b0", "#7e7e7e"] },
+      { name: "Titan",     period: 15.95, dist: 4.8, r: 3.2, color: ["#f0c886", "#d9a05b", "#a8722f"] }
+    ],
     facts: [
       "Saturn's rings are made of billions of chunks of ice and rock.",
       "The rings are huge but super thin — only about 10 meters thick in places!",
@@ -174,6 +199,12 @@ const PLANETS = [
     orbitFrac: 0.80,
     drawRadius: 12,
     colors: ["#d8f4f4", "#9adfe3", "#4fa8b5"],
+    moonsList: [
+      { name: "Miranda", period: 1.41,  dist: 2.3, r: 1.5, color: ["#d8d8dc", "#aaaab0", "#77777d"] },
+      { name: "Ariel",   period: 2.52,  dist: 2.9, r: 1.9, color: ["#e2e2e6", "#b6b6bc", "#828288"] },
+      { name: "Titania", period: 8.71,  dist: 3.6, r: 2.3, color: ["#cfcdd2", "#a09ea6", "#6d6b73"] },
+      { name: "Oberon",  period: 13.46, dist: 4.4, r: 2.2, color: ["#c6c2c6", "#969296", "#646064"] }
+    ],
     facts: [
       "Uranus is tipped over on its side — it probably got knocked over by a giant crash long ago.",
       "Each pole gets 42 years of sunlight, then 42 years of darkness!",
@@ -196,11 +227,15 @@ const PLANETS = [
     orbitFrac: 0.94,
     drawRadius: 12,
     colors: ["#9fc1ff", "#4f74d8", "#27418f"],
+    moonsList: [
+      { name: "Proteus", period: 1.12,  dist: 2.3, r: 1.6, color: ["#a8a8b2", "#8b8b94", "#5d5d66"] },
+      { name: "Triton",  period: -5.88, dist: 3.4, r: 2.7, color: ["#eef2f6", "#c9d3dc", "#93a2ae"] }
+    ],
     facts: [
       "Neptune has the fastest winds in the solar system — over 2,000 km/h!",
       "It was found using math before anyone saw it through a telescope.",
       "One Neptune year is 165 Earth years — it has only completed one orbit since being discovered in 1846.",
-      "Sunlight on Neptune is 900 times dimmer than on Earth."
+      "Sunlight on Neptune is 900 times dimmer than on Earth. Its big moon Triton orbits backwards!"
     ]
   }
 ];
@@ -219,18 +254,18 @@ const DISTANCES_MKM = {
 
 // Rotating "did you know" facts for the ticker.
 const TICKER_FACTS = [
-  "💡 Did you know? Click any planet (or the Sun!) to learn all about it.",
-  "💡 One million Earths could fit inside the Sun!",
-  "💡 A day on Venus is longer than its whole year!",
-  "💡 Jupiter's Great Red Spot is a storm bigger than Earth.",
-  "💡 Saturn would float in water — if you had a big enough bathtub.",
-  "💡 Neptune's winds blow faster than a fighter jet!",
-  "💡 Uranus rolls around the Sun on its side, like a ball.",
-  "💡 Mars has the tallest volcano in the solar system: Olympus Mons.",
-  "💡 Sunlight takes over 4 hours to reach Neptune.",
-  "💡 Mercury zooms around the Sun in just 88 days!",
-  "💡 The Moon is slowly drifting away from Earth — about 4 cm every year.",
-  "💡 Space is silent — there's no air to carry sound!"
+  "Tip: drag to spin the solar system, pinch or scroll to zoom, and tap any planet to visit it up close.",
+  "Did you know? About 1,300,000 Earths could fit inside the Sun.",
+  "Did you know? A day on Venus is longer than its whole year.",
+  "Did you know? Jupiter's Great Red Spot is a storm bigger than Earth.",
+  "Did you know? Saturn would float in water — if you had a big enough bathtub.",
+  "Did you know? Neptune's winds blow faster than a fighter jet.",
+  "Did you know? Uranus rolls around the Sun on its side, like a ball.",
+  "Did you know? Mars has the tallest volcano in the solar system: Olympus Mons.",
+  "Did you know? Sunlight takes over 4 hours to reach Neptune.",
+  "Did you know? Mercury zooms around the Sun in just 88 days.",
+  "Did you know? The Moon is slowly drifting away from Earth — about 4 cm every year.",
+  "Did you know? Space is silent — there's no air to carry sound."
 ];
 
 // Quiz question bank. 8 random questions are picked each round.
@@ -266,5 +301,9 @@ const QUIZ_QUESTIONS = [
   { q: "Which planet is known as Earth's twin because of its size?", answers: ["Mars", "Mercury", "Venus", "Neptune"], correct: 2,
     why: "Venus is almost the same size as Earth — but way too hot to visit!" },
   { q: "A 'year' on a planet means the time it takes to...", answers: ["Spin once", "Cool down", "Grow bigger", "Orbit the Sun once"], correct: 3,
-    why: "A year = one full trip around the Sun. Spinning once = one day." }
+    why: "A year = one full trip around the Sun. Spinning once = one day." },
+  { q: "Which is the biggest moon in the whole solar system?", answers: ["Ganymede", "The Moon", "Titan", "Phobos"], correct: 0,
+    why: "Jupiter's moon Ganymede is even bigger than the planet Mercury!" },
+  { q: "Which moon orbits its planet BACKWARDS?", answers: ["Europa", "Triton", "The Moon", "Titan"], correct: 1,
+    why: "Neptune's moon Triton orbits the opposite way to Neptune's spin." }
 ];

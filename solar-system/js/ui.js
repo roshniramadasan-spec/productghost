@@ -126,7 +126,7 @@
   function showBestScore() {
     const best = localStorage.getItem("solar-quiz-best");
     document.getElementById("best-score").textContent =
-      best ? `🏆 Your best score: ${best}/${QUIZ_LENGTH}` : "";
+      best ? `Best score: ${best}/${QUIZ_LENGTH}` : "";
   }
   showBestScore();
 
@@ -171,14 +171,14 @@
     });
     if (opt.isCorrect) {
       score++;
-      feedbackEl.textContent = `✅ Correct! ${item.why}`;
+      feedbackEl.textContent = `Correct! ${item.why}`;
       feedbackEl.classList.add("good");
     } else {
       btn.classList.add("wrong");
-      feedbackEl.textContent = `❌ Not quite. ${item.why}`;
+      feedbackEl.textContent = `Not quite. ${item.why}`;
       feedbackEl.classList.add("bad");
     }
-    nextBtn.textContent = current + 1 < QUIZ_LENGTH ? "Next ➡️" : "See Results 🏁";
+    nextBtn.textContent = current + 1 < QUIZ_LENGTH ? "Next" : "See Results";
     nextBtn.classList.remove("hidden");
   }
 
@@ -195,10 +195,10 @@
     questionCard.classList.add("hidden");
     resultCard.classList.remove("hidden");
     const titles = [
-      [8, "🌟 Perfect! You're a Space Genius!"],
-      [6, "🚀 Amazing! Future astronaut alert!"],
-      [4, "🛰️ Nice work, Space Cadet!"],
-      [0, "🔭 Good start! Explore the planets and try again!"]
+      [8, "Perfect score! You're a space genius!"],
+      [6, "Amazing! Future astronaut material!"],
+      [4, "Nice work, space cadet!"],
+      [0, "Good start! Explore the planets and try again!"]
     ];
     document.getElementById("result-title").textContent = titles.find(([min]) => score >= min)[1];
     document.getElementById("result-text").textContent = `You scored ${score} out of ${QUIZ_LENGTH}!`;
