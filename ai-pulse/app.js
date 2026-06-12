@@ -45,22 +45,157 @@ const topicLabel = (t) => TOPIC_LABELS[t] || t;
 
 const CARD_BY_ID = Object.fromEntries(CARDS.map((c) => [c.id, c]));
 
+/* ── gamification (reward consumption, never quiz) ───────────────── */
+
+const DAILY_GOAL = 5; // shots per day
+
+const XP_LEVELS = [
+  { at: 0, name: "AI-Curious" },
+  { at: 100, name: "AI Explorer" },
+  { at: 300, name: "AI Operator" },
+  { at: 700, name: "AI-First Leader" },
+  { at: 1500, name: "AI Legend" },
+];
+
+function levelInfo(xp) {
+  let idx = 0;
+  for (let i = 0; i < XP_LEVELS.length; i++) if (xp >= XP_LEVELS[i].at) idx = i;
+  const cur = XP_LEVELS[idx];
+  const next = XP_LEVELS[idx + 1] || null;
+  return {
+    idx,
+    name: cur.name,
+    next: next ? next.name : null,
+    progress: next ? (xp - cur.at) / (next.at - cur.at) : 1,
+    toNext: next ? next.at - xp : 0,
+  };
+}
+
+const distinctViews = (p) => Object.values(p.cards).filter((c) => c.views > 0).length;
+
+const ACHIEVEMENTS = [
+  { id: "first-shot", emoji: "🥇", name: "First Shot", desc: "Viewed your first card", check: (p, t) => t.views >= 1 },
+  { id: "taste-maker", emoji: "💚", name: "Taste Maker", desc: "Gave your first 👍 — the feed starts learning", check: (p, t) => t.likes >= 1 },
+  { id: "opinionated", emoji: "🎯", name: "Opinionated", desc: "10 reactions given", check: (p, t) => t.likes + t.dislikes >= 10 },
+  { id: "halfway", emoji: "🌗", name: "Halfway There", desc: "Half the deck explored", check: (p) => distinctViews(p) >= Math.ceil(CARDS.length / 2) },
+  { id: "completionist", emoji: "🏆", name: "Completionist", desc: "Every card in the deck viewed", check: (p) => distinctViews(p) >= CARDS.length },
+  { id: "daily-five", emoji: "📅", name: "Daily Five", desc: `Hit the daily goal of ${DAILY_GOAL} shots`, check: (p) => (p.viewsToday || 0) >= DAILY_GOAL },
+  { id: "streak-3", emoji: "🔥", name: "On Fire", desc: "3-day streak", check: (p) => p.streak >= 3 },
+  { id: "streak-7", emoji: "🚀", name: "Unstoppable", desc: "7-day streak", check: (p) => p.streak >= 7 },
+];
+
+function addXp(p, amount) {
+  const before = levelInfo(p.xp).idx;
+  p.xp += amount;
+  xpPop(`+${amount} XP`);
+  const after = levelInfo(p.xp);
+  if (after.idx > before) {
+    confetti(70);
+    toast(`🎉 Level up — you're now ${after.name}!`);
+  }
+}
+
+function checkAchievements(p) {
+  const t = reactionCounts(p);
+  for (const a of ACHIEVEMENTS) {
+    if (!p.achievements[a.id] && a.check(p, t)) {
+      p.achievements[a.id] = Date.now();
+      p.xp += 20;
+      confetti(46);
+      toast(`${a.emoji} Achievement unlocked: ${a.name} (+20 XP)`);
+    }
+  }
+}
+
+function dayRoll(p) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (p.lastViewDay !== today) {
+    p.lastViewDay = today;
+    p.viewsToday = 0;
+  }
+}
+
+function confetti(n = 40) {
+  const colors = ["#D97757", "#7d8c5c", "#cc9e4c", "#8b7cf6", "#38bdf8", "#f472b6"];
+  const wrap = document.createElement("div");
+  wrap.className = "confetti";
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement("i");
+    s.style.left = Math.random() * 100 + "vw";
+    s.style.background = colors[i % colors.length];
+    s.style.animationDelay = Math.random() * 0.35 + "s";
+    s.style.animationDuration = 1.3 + Math.random() * 1.3 + "s";
+    wrap.appendChild(s);
+  }
+  document.body.appendChild(wrap);
+  setTimeout(() => wrap.remove(), 3000);
+}
+
+function xpPop(text) {
+  const anchor = $("#chip-score");
+  if (!anchor || $("#screen-feed").classList.contains("hidden")) return;
+  const el = document.createElement("span");
+  el.className = "xp-pop";
+  el.textContent = text;
+  const r = anchor.getBoundingClientRect();
+  el.style.left = r.left + r.width / 2 + "px";
+  el.style.top = r.bottom + 6 + "px";
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
 /* ── state & learning engine (ported from server.js) ─────────────── */
 
 function freshProfile() {
   return {
     topicWeights: {}, kindWeights: {}, cards: {},
     sessions: 0, streak: 0, lastSessionDay: null, events: [],
+    xp: 0, achievements: {}, viewsToday: 0, lastViewDay: null,
+    goalAwardDay: null, decksFinished: 0,
   };
+}
+
+// migrate profiles saved before gamification existed
+function normalizeProfile(p) {
+  if (typeof p.xp !== "number") {
+    const t = reactionCounts(p);
+    p.xp = p.sessions * 5 + t.views * 10 + (t.likes + t.dislikes) * 5;
+  }
+  if (!p.achievements) p.achievements = {};
+  if (typeof p.viewsToday !== "number") p.viewsToday = 0;
+  if (!("lastViewDay" in p)) p.lastViewDay = null;
+  if (!("goalAwardDay" in p)) p.goalAwardDay = null;
+  if (typeof p.decksFinished !== "number") p.decksFinished = 0;
+}
+
+// refresh requests are a shared section of the sync blob (not per-profile)
+// so Kurt can raise one and Roshni can mark it handled; merged by max-ts
+function mergeRequests(a = {}, b = {}) {
+  const out = {};
+  for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    out[k] = {
+      requestedAt: Math.max(a[k]?.requestedAt || 0, b[k]?.requestedAt || 0),
+      handledAt: Math.max(a[k]?.handledAt || 0, b[k]?.handledAt || 0),
+    };
+  }
+  if (!out.kurt) out.kurt = { requestedAt: 0, handledAt: 0 };
+  return out;
 }
 
 function loadState() {
   try {
     const s = JSON.parse(localStorage.getItem(STORE_KEY));
-    for (const p of PROFILES) if (!s.profiles[p]) s.profiles[p] = freshProfile();
+    for (const p of PROFILES) {
+      if (!s.profiles[p]) s.profiles[p] = freshProfile();
+      normalizeProfile(s.profiles[p]);
+    }
+    s.requests = mergeRequests(s.requests, {});
     return s;
   } catch {
-    return { profiles: { kurt: freshProfile(), roshni: freshProfile() } };
+    return {
+      profiles: { kurt: freshProfile(), roshni: freshProfile() },
+      requests: mergeRequests({}, {}),
+    };
   }
 }
 
@@ -123,18 +258,6 @@ function reactionCounts(p) {
   return { likes, dislikes, views };
 }
 
-function aiScore(p) {
-  const t = reactionCounts(p);
-  return p.sessions * 5 + t.views + t.likes * 3 + t.dislikes;
-}
-
-function levelFor(score) {
-  if (score >= 150) return "AI-First Leader";
-  if (score >= 75) return "AI Operator";
-  if (score >= 25) return "AI Explorer";
-  return "AI-Curious";
-}
-
 function topTopics(p, n) {
   return Object.entries(p.topicWeights)
     .filter(([, w]) => w > 0.5)
@@ -159,13 +282,18 @@ function logEvent(p, type, cardId) {
 
 function feedMeta(profile, p) {
   const t = reactionCounts(p);
-  const score = aiScore(p);
+  const lev = levelInfo(p.xp);
   return {
     profile,
     sessions: p.sessions,
     streak: p.streak,
-    score,
-    level: levelFor(score),
+    score: p.xp,
+    level: lev.name,
+    levelNext: lev.next,
+    levelProgress: lev.progress,
+    xpToNext: lev.toNext,
+    goalDone: Math.min(p.viewsToday || 0, DAILY_GOAL),
+    achievementsUnlocked: Object.keys(p.achievements || {}).length,
     tuned: t.likes + t.dislikes >= 3,
     topTopics: topTopics(p, 3),
     likes: t.likes,
@@ -183,7 +311,19 @@ function sendEvent(type, cardId) {
   } else if (type === "view") {
     const card = CARD_BY_ID[cardId];
     if (!card) return;
-    cardStats(p, cardId).views++;
+    dayRoll(p);
+    const cs = cardStats(p, cardId);
+    const firstView = cs.views === 0;
+    cs.views++;
+    p.viewsToday++;
+    addXp(p, firstView ? 10 : 2);
+    const today = new Date().toISOString().slice(0, 10);
+    if (p.viewsToday === DAILY_GOAL && p.goalAwardDay !== today) {
+      p.goalAwardDay = today;
+      addXp(p, 25);
+      confetti(46);
+      toast(`🎯 Daily goal hit — ${DAILY_GOAL} shots, +25 XP!`);
+    }
     for (const tag of card.tags) {
       p.topicWeights[tag] = +((p.topicWeights[tag] || 0) + 0.08).toFixed(3);
     }
@@ -191,9 +331,15 @@ function sendEvent(type, cardId) {
   } else if (type === "like" || type === "dislike" || type === "clear") {
     const card = CARD_BY_ID[cardId];
     if (!card) return;
+    const cs = cardStats(p, cardId);
+    if ((type === "like" || type === "dislike") && !cs.reactedXp) {
+      cs.reactedXp = true;
+      addXp(p, 5);
+    }
     applyReaction(p, card, type);
     logEvent(p, type, cardId);
   }
+  checkAchievements(p);
   persist();
   App.meta = feedMeta(App.profile, p);
   renderChips();
@@ -261,15 +407,19 @@ async function pullSync() {
     const res = await fetch(`${SYNC_API}/${syncId}`, { cache: "no-store" });
     if (!res.ok) throw new Error();
     const remote = await res.json();
-    if (remote && remote.profiles) {
-      for (const name of PROFILES) {
-        const rp = remote.profiles[name];
-        const lp = state.profiles[name];
-        // adopt whichever copy of a profile has seen more activity
-        if (rp && (rp.events?.length || 0) > (lp.events?.length || 0)) {
-          state.profiles[name] = rp;
+    if (remote) {
+      if (remote.profiles) {
+        for (const name of PROFILES) {
+          const rp = remote.profiles[name];
+          const lp = state.profiles[name];
+          // adopt whichever copy of a profile has seen more activity
+          if (rp && (rp.events?.length || 0) > (lp.events?.length || 0)) {
+            state.profiles[name] = rp;
+            normalizeProfile(state.profiles[name]);
+          }
         }
       }
+      state.requests = mergeRequests(remote.requests, state.requests);
       localStorage.setItem(STORE_KEY, JSON.stringify(state));
     }
     syncStatus = "on";
@@ -295,6 +445,8 @@ async function pushSync() {
     remote.app = "ai-pulse";
     remote.profiles = remote.profiles || {};
     remote.profiles[App.profile] = state.profiles[App.profile];
+    remote.requests = mergeRequests(remote.requests, state.requests);
+    state.requests = remote.requests;
     const res = await fetch(`${SYNC_API}/${syncId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -398,6 +550,8 @@ async function openFeed(profile) {
   $("#shots").innerHTML = `<div class="shot loading"><p>Curating your shots…</p></div>`;
   await pullSync();
   const p = state.profiles[profile];
+  dayRoll(p);
+  App.deckDoneThisSession = false;
   sendEvent("session_start");
   App.feed = buildFeed(p);
   App.reactions = {};
@@ -411,9 +565,15 @@ async function openFeed(profile) {
 
 function renderChips() {
   if (!App.meta) return;
-  $("#chip-streak").textContent = `🔥 ${App.meta.streak}`;
-  $("#chip-score").textContent = `⚡ ${App.meta.score}`;
-  $("#chip-score").title = `AI-First score · level: ${App.meta.level}`;
+  const m = App.meta;
+  $("#chip-streak").textContent = `🔥 ${m.streak}`;
+  $("#chip-score").textContent = `⚡ ${m.score} XP`;
+  $("#chip-score").title = `Level: ${m.level}${m.levelNext ? ` · ${m.xpToNext} XP to ${m.levelNext}` : " · max level"}`;
+  const goal = $("#chip-goal");
+  if (goal) {
+    goal.textContent = m.goalDone >= DAILY_GOAL ? `🎯 ✓` : `🎯 ${m.goalDone}/${DAILY_GOAL}`;
+    goal.title = `Daily goal: ${DAILY_GOAL} shots`;
+  }
 }
 
 function greetingCard() {
@@ -433,27 +593,99 @@ function greetingCard() {
         <p class="greet-sub">${sub}</p>
         <div class="greet-stats">
           <span>🔥 ${m.streak}-day streak</span>
-          <span>⚡ ${m.score} · ${m.level}</span>
+          <span>🎯 ${m.goalDone}/${DAILY_GOAL} today</span>
           <span>🆕 ${m.freshCount} fresh shots</span>
         </div>
+        <div class="level-row">
+          <span class="level-name">${m.level}</span>
+          <span class="level-track"><span class="level-fill" style="width:${Math.round(m.levelProgress * 100)}%"></span></span>
+          <span class="level-next">${m.levelNext ? `${m.xpToNext} XP to ${m.levelNext}` : "Max level 🏔"}</span>
+        </div>
+        <div class="badge-row">${badgeShelf()}</div>
         <p class="greet-tuned">${tunedLine}</p>
         <div class="swipe-hint">Swipe up <span class="arrow">↑</span></div>
       </div>
     </article>`;
 }
 
+function badgeShelf() {
+  const p = state.profiles[App.profile];
+  return ACHIEVEMENTS.map(
+    (a) =>
+      `<span class="${p.achievements[a.id] ? "" : "locked"}" title="${a.name} — ${a.desc}">${a.emoji}</span>`
+  ).join("");
+}
+
+const MILESTONE_LINES = [
+  "🔥 You're on a roll — most leaders never get past the headlines.",
+  "⚡ Double digits territory. This is what an AI-first habit looks like.",
+  "🏔 Deep in the deck now. The engine learns your taste with every swipe.",
+];
+
+function milestoneCard(idx, count) {
+  const line = MILESTONE_LINES[idx % MILESTONE_LINES.length];
+  return `
+    <article class="shot greet milestone">
+      <div class="shot-body">
+        <h2 class="greet-title">${count} shots down 🎉</h2>
+        <p class="greet-sub">${line}</p>
+        <div class="swipe-hint">Keep swiping <span class="arrow">↑</span></div>
+      </div>
+    </article>`;
+}
+
 function endCard() {
   const m = App.meta;
+  const req = state.requests?.kurt || { requestedAt: 0, handledAt: 0 };
+  const pending = req.requestedAt > req.handledAt;
+  const requestBtn =
+    App.profile === "kurt"
+      ? pending
+        ? `<button class="big-btn" id="btn-request" disabled>✓ Fresh deck requested — Roshni's on it</button>`
+        : `<button class="big-btn" id="btn-request">📨 Ask Roshni for a fresh deck</button>`
+      : "";
   return `
-    <article class="shot greet end-card">
+    <article class="shot greet end-card" data-end="1">
       <div class="shot-body">
-        <h2 class="greet-title">You're all caught up 🎉</h2>
+        <h2 class="greet-title">Deck complete 🎉</h2>
         <p class="greet-sub">That's today's pulse, ${App.profile === "kurt" ? "Kurt" : "Roshni"}.
-        Your feed just got smarter — ${m.likes} 👍 and ${m.dislikes} 👎 are shaping tomorrow's shots.</p>
-        <button class="big-btn" id="btn-reshuffle">↻ Reshuffle with what I learned</button>
+        Your feed just got smarter — ${m.likes} 👍 and ${m.dislikes} 👎 are shaping the next round.</p>
+        <div class="end-actions">
+          ${requestBtn}
+          <button class="big-btn big-btn-secondary" id="btn-reshuffle">↻ Reshuffle with what I learned</button>
+        </div>
         <p class="greet-tuned">Come back tomorrow to keep the 🔥 streak alive.</p>
       </div>
     </article>`;
+}
+
+function requestRefresh() {
+  state.requests.kurt.requestedAt = Date.now();
+  const p = state.profiles[App.profile];
+  logEvent(p, "refresh_request");
+  persist();
+  pushSync();
+  confetti(50);
+  toast("📨 Request sent to Roshni!");
+  const b = $("#btn-request");
+  if (b) {
+    b.disabled = true;
+    b.textContent = "✓ Fresh deck requested — Roshni's on it";
+  }
+}
+
+function onDeckEnd() {
+  if (App.deckDoneThisSession) return;
+  App.deckDoneThisSession = true;
+  const p = state.profiles[App.profile];
+  p.decksFinished++;
+  addXp(p, p.decksFinished === 1 ? 50 : 15);
+  logEvent(p, "deck_complete");
+  confetti(80);
+  checkAchievements(p);
+  persist();
+  App.meta = feedMeta(App.profile, p);
+  renderChips();
 }
 
 function cardHTML(card, index) {
@@ -483,12 +715,21 @@ function cardHTML(card, index) {
 }
 
 function renderFeed() {
-  const html = greetingCard() + App.feed.map((c, i) => cardHTML(c, i)).join("") + endCard();
+  let html = greetingCard();
+  App.feed.forEach((c, i) => {
+    html += cardHTML(c, i);
+    // a little cheer every 7 cards, Duolingo-style
+    if ((i + 1) % 7 === 0 && i + 1 < App.feed.length) {
+      html += milestoneCard((i + 1) / 7 - 1, i + 1);
+    }
+  });
+  html += endCard();
   const shots = $("#shots");
   shots.innerHTML = html;
   shots.scrollTop = 0;
 
   $("#btn-reshuffle")?.addEventListener("click", () => openFeed(App.profile));
+  $("#btn-request")?.addEventListener("click", requestRefresh);
 
   // reactions (assignment, not addEventListener — renderFeed runs on every reshuffle)
   shots.onclick = onShotClick;
@@ -499,6 +740,10 @@ function renderFeed() {
     (entries) => {
       for (const e of entries) {
         if (!e.isIntersecting) continue;
+        if (e.target.hasAttribute("data-end")) {
+          onDeckEnd();
+          continue;
+        }
         const id = e.target.dataset.id;
         if (id && !App.viewedThisSession.has(id)) {
           App.viewedThisSession.add(id);
@@ -508,7 +753,7 @@ function renderFeed() {
     },
     { root: shots, threshold: 0.6 }
   );
-  for (const el of shots.querySelectorAll(".shot[data-id]")) App.observer.observe(el);
+  for (const el of shots.querySelectorAll(".shot[data-id], .shot[data-end]")) App.observer.observe(el);
 
   // keyboard navigation
   document.onkeydown = (e) => {
@@ -565,6 +810,8 @@ const EVENT_LABELS = {
   like: "👍 Liked",
   dislike: "👎 Disliked",
   clear: "↩️ Cleared reaction",
+  deck_complete: "🏁 Finished the deck",
+  refresh_request: "📨 Requested a fresh deck",
 };
 
 async function openAdmin() {
@@ -574,6 +821,14 @@ async function openAdmin() {
   await pullSync();
   const p = state.profiles.kurt;
   const m = feedMeta("kurt", p);
+
+  const req = state.requests?.kurt || { requestedAt: 0, handledAt: 0 };
+  const requestBanner =
+    req.requestedAt > req.handledAt
+      ? `<div class="panel request-panel">📨 <strong>Kurt asked for a fresh deck</strong> — ${fmtTime(req.requestedAt)}.
+           <span class="muted">Ask Claude to refresh the cards, then mark this handled.</span>
+           <div class="share-row"><button class="chip chip-btn" id="btn-req-done">✓ Mark handled</button></div></div>`
+      : "";
 
   const syncBanner =
     syncStatus === "on"
@@ -607,6 +862,7 @@ async function openAdmin() {
   }));
 
   el.innerHTML = `
+    ${requestBanner}
     ${syncBanner}
     <div class="tiles">
       <div class="tile"><strong>${m.sessions}</strong><span>Sessions</span></div>
@@ -614,7 +870,20 @@ async function openAdmin() {
       <div class="tile"><strong>${m.likes}</strong><span>👍 Thumbs up</span></div>
       <div class="tile"><strong>${m.dislikes}</strong><span>👎 Thumbs down</span></div>
       <div class="tile"><strong>${interacted.length}/${CARDS.length}</strong><span>Cards touched</span></div>
-      <div class="tile tile-score"><strong>⚡ ${m.score}</strong><span>${m.level}</span></div>
+      <div class="tile"><strong>🏅 ${m.achievementsUnlocked}/${ACHIEVEMENTS.length}</strong><span>Achievements</span></div>
+      <div class="tile tile-score"><strong>⚡ ${m.score} XP</strong><span>${m.level}</span></div>
+    </div>
+
+    <div class="panel">
+      <h3>🏅 Achievements</h3>
+      <ul class="achievement-list">
+        ${ACHIEVEMENTS.map((a) => {
+          const ts = p.achievements?.[a.id];
+          return `<li class="${ts ? "" : "locked"}"><span class="ach-emoji">${a.emoji}</span>
+            <span class="ach-text"><strong>${a.name}</strong> <small>${a.desc}</small></span>
+            <span class="ach-when">${ts ? fmtTime(ts) : "Locked"}</span></li>`;
+        }).join("")}
+      </ul>
     </div>
 
     <div class="panel">
@@ -651,6 +920,13 @@ async function openAdmin() {
           <li><span class="when">${fmtTime(e.ts)}</span> ${EVENT_LABELS[e.type] || e.type}${e.cardTitle ? ` — <em>${e.cardTitle}</em>` : ""}</li>`).join("")}
       </ul>` : `<p class="muted">No activity recorded yet.</p>`}
     </div>`;
+
+  $("#btn-req-done")?.addEventListener("click", () => {
+    state.requests.kurt.handledAt = Date.now();
+    persist();
+    pushSync();
+    openAdmin();
+  });
 
   $("#btn-copy-share")?.addEventListener("click", async () => {
     const input = $("#share-input");

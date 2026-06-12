@@ -119,3 +119,13 @@ h1, h2, h3, .shot-title, .greet-title { font-family: var(--serif); font-weight: 
   color: #FAF9F5;
   border-color: #1f1e1b;
 }
+
+/* ── gamification (Fable theme) ──────────────────── */
+
+:root { --xp-color: #2e7d46; }
+.xp-pop { text-shadow: none; }
+.level-track { background: rgba(31, 30, 27, .12); }
+.level-fill { background: linear-gradient(90deg, var(--accent), var(--accent-deep)); }
+.big-btn-secondary { background: #e9e3d3; color: var(--fg); }
+.big-btn-secondary:hover { background: #ded7c4; }
+.big-btn:disabled { background: #b8b0a0; }
