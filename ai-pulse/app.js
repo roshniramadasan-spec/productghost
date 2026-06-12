@@ -190,11 +190,13 @@ function loadState() {
       normalizeProfile(s.profiles[p]);
     }
     s.requests = mergeRequests(s.requests, {});
+    if (typeof s.resetAt !== "number") s.resetAt = 0;
     return s;
   } catch {
     return {
       profiles: { kurt: freshProfile(), roshni: freshProfile() },
       requests: mergeRequests({}, {}),
+      resetAt: 0,
     };
   }
 }
@@ -408,18 +410,24 @@ async function pullSync() {
     if (!res.ok) throw new Error();
     const remote = await res.json();
     if (remote) {
-      if (remote.profiles) {
-        for (const name of PROFILES) {
-          const rp = remote.profiles[name];
-          const lp = state.profiles[name];
-          // adopt whichever copy of a profile has seen more activity
-          if (rp && (rp.events?.length || 0) > (lp.events?.length || 0)) {
-            state.profiles[name] = rp;
-            normalizeProfile(state.profiles[name]);
+      if ((remote.resetAt || 0) > (state.resetAt || 0)) {
+        // a reset happened on another device — adopt it wholesale so stale
+        // local data can't resurrect wiped activity
+        adoptReset(remote);
+      } else {
+        if (remote.profiles) {
+          for (const name of PROFILES) {
+            const rp = remote.profiles[name];
+            const lp = state.profiles[name];
+            // adopt whichever copy of a profile has seen more activity
+            if (rp && (rp.events?.length || 0) > (lp.events?.length || 0)) {
+              state.profiles[name] = rp;
+              normalizeProfile(state.profiles[name]);
+            }
           }
         }
+        state.requests = mergeRequests(remote.requests, state.requests);
       }
-      state.requests = mergeRequests(remote.requests, state.requests);
       localStorage.setItem(STORE_KEY, JSON.stringify(state));
     }
     syncStatus = "on";
@@ -434,6 +442,45 @@ function schedulePush() {
   pushTimer = setTimeout(pushSync, 1200);
 }
 
+function adoptReset(remote) {
+  state.profiles = {};
+  for (const name of PROFILES) {
+    state.profiles[name] = remote.profiles?.[name] || freshProfile();
+    normalizeProfile(state.profiles[name]);
+  }
+  state.requests = mergeRequests(remote.requests, {});
+  state.resetAt = remote.resetAt || 0;
+}
+
+async function resetAll() {
+  if (!confirm("Reset ALL activity for both profiles? Kurt starts completely fresh. The share link and sync code stay the same.")) return;
+  state = {
+    profiles: { kurt: freshProfile(), roshni: freshProfile() },
+    requests: mergeRequests({}, {}),
+    resetAt: Date.now(),
+  };
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  if (syncId) {
+    try {
+      const res = await fetch(`${SYNC_API}/${syncId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          app: "ai-pulse",
+          profiles: state.profiles,
+          requests: state.requests,
+          resetAt: state.resetAt,
+        }),
+      });
+      syncStatus = res.ok ? "on" : "error";
+    } catch {
+      syncStatus = "error";
+    }
+  }
+  toast("♻️ All activity reset — Kurt starts fresh");
+  openAdmin();
+}
+
 async function pushSync() {
   if (!syncId || !App.profile) return;
   try {
@@ -442,6 +489,14 @@ async function pushSync() {
     try {
       remote = (await (await fetch(`${SYNC_API}/${syncId}`, { cache: "no-store" })).json()) || {};
     } catch {}
+    if ((remote.resetAt || 0) > (state.resetAt || 0)) {
+      // reset happened elsewhere — adopt it rather than writing stale data
+      adoptReset(remote);
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      syncStatus = "on";
+      return;
+    }
+    remote.resetAt = state.resetAt || 0;
     remote.app = "ai-pulse";
     remote.profiles = remote.profiles || {};
     remote.profiles[App.profile] = state.profiles[App.profile];
@@ -544,7 +599,11 @@ async function openFeed(profile) {
   App.viewedThisSession = new Set();
   show("screen-feed");
   const adminBtn = $("#btn-admin");
-  if (adminBtn) adminBtn.style.display = profile === "roshni" && !LOCK ? "" : "none";
+  if (adminBtn) {
+    adminBtn.style.display = profile === "roshni" && !LOCK ? "" : "none";
+    const req = state.requests?.kurt || {};
+    adminBtn.classList.toggle("alert", (req.requestedAt || 0) > (req.handledAt || 0));
+  }
   const switchBtn = $("#btn-switch");
   if (switchBtn) switchBtn.style.display = LOCK ? "none" : "";
   $("#shots").innerHTML = `<div class="shot loading"><p>Curating your shots…</p></div>`;
@@ -919,7 +978,15 @@ async function openAdmin() {
         ${events.map((e) => `
           <li><span class="when">${fmtTime(e.ts)}</span> ${EVENT_LABELS[e.type] || e.type}${e.cardTitle ? ` — <em>${e.cardTitle}</em>` : ""}</li>`).join("")}
       </ul>` : `<p class="muted">No activity recorded yet.</p>`}
+    </div>
+
+    <div class="panel">
+      <h3>🛠 Maintenance</h3>
+      <p class="muted">Wipes views, reactions, XP, streaks, achievements and pending requests for <strong>both</strong> profiles, everywhere — the share link and sync code stay the same. Use before handing the link to Kurt.</p>
+      <div class="share-row"><button class="chip chip-btn danger" id="btn-reset-all">♻️ Reset all activity</button></div>
     </div>`;
+
+  $("#btn-reset-all")?.addEventListener("click", resetAll);
 
   $("#btn-req-done")?.addEventListener("click", () => {
     state.requests.kurt.handledAt = Date.now();
@@ -965,6 +1032,13 @@ function init() {
   $("#btn-admin-refresh")?.addEventListener("click", openAdmin);
 
   syncBoot();
+
+  // keep the admin dashboard live: new requests/activity appear without a manual reload
+  setInterval(() => {
+    if (!$("#screen-admin").classList.contains("hidden") && document.visibilityState === "visible") {
+      openAdmin();
+    }
+  }, 45000);
 
   if (App.authed) (LOCK ? openFeed(LOCK) : show("screen-profiles"));
   else show("screen-gate");
