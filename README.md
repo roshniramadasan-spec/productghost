@@ -17,26 +17,35 @@ python3 -m http.server 8000
 
 ## What's inside
 
-### 🪐 Explore
-A live animation of all 8 planets orbiting the Sun. Orbital **speeds are real**
-(Mercury really does lap Neptune hundreds of times!), while sizes and distances
-are compressed so everything fits on screen.
+### Explore
+A live, immersive animation of all 8 planets orbiting the Sun in a tilted
+3D-style perspective. Orbital **speeds are real** (Mercury really does lap
+Neptune hundreds of times!), while sizes and distances are compressed so
+everything fits on screen.
 
-- **Click any planet (or the Sun)** to open its fact card: size, distance,
-  temperature, day/year length, moons, fun facts, and even what you'd weigh there.
-- **Speed slider** — from 1 to 90 Earth days per second. Crank it up to watch
-  Neptune finally complete an orbit!
-- **Pause**, toggle **names** and **orbit lines**.
-- A simulation clock counts elapsed days and years.
-- A rotating "Did you know?" fact ticker at the bottom.
+- **Swipe / drag** to spin the whole solar system and change the viewing angle.
+- **Pinch or scroll** to zoom — from the full system all the way down to
+  close-up planet views.
+- **Tap any planet (or the Sun)** to fly to it. Up close you'll see its major
+  moons orbiting with their names — Io, Europa, Ganymede and Callisto around
+  Jupiter; Titan, Rhea, Enceladus and Mimas around Saturn; backwards-orbiting
+  Triton around Neptune, and more. A fact card opens with size, distance,
+  temperature, day/year length, moons, fun facts, and what you'd weigh there.
+- Jupiter and Saturn show banded cloud tops (and the Great Red Spot); Saturn's
+  rings tilt with the camera and pass in front of and behind the planet.
+- **Speed slider** (1–90 Earth days per second), **pause**, **zoom buttons**,
+  **reset view**, and toggles for names and orbit lines.
+- A simulation clock counts elapsed days and years, and a rotating
+  "Did you know?" fact ticker runs along the bottom.
 
-### 📏 Compare Sizes
+### Compare Sizes
 True-to-scale planet size comparison (Jupiter vs. tiny Mercury!) plus a
 true-to-scale distance map showing just how empty space really is.
 
-### 🧠 Quiz
-An 8-question multiple-choice quiz drawn from a 16-question bank, with
-explanations for every answer and a best-score tracker saved in the browser.
+### Quiz
+An 8-question multiple-choice quiz drawn from an 18-question bank (including
+moon questions), with explanations for every answer and a best-score tracker
+saved in the browser.
 
 ## Facts sources
 
