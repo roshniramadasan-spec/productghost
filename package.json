@@ -5,6 +5,7 @@
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
+    "pulse": "node ai-pulse/server.js",
     "dev": "concurrently \"npm run dev:renderer\" \"wait-on http://localhost:5222 && electron .\"",
     "dev:renderer": "vite",
     "build:renderer": "vite build",

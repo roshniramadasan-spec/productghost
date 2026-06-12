@@ -1,5 +1,6 @@
 node_modules/
 dist/
+ai-pulse/data/
 release/
 .env
 *.log

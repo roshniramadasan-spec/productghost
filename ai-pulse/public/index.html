@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0b14" />
+  <title>AI Pulse — your AI-first briefing</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+</head>
+<body>
+  <!-- ── Access gate ─────────────────────────────── -->
+  <section id="screen-gate" class="screen">
+    <div class="gate-inner">
+      <div class="logo-big">⚡</div>
+      <h1>AI Pulse</h1>
+      <p class="muted">Your daily AI-first briefing.<br/>Enter access code to continue.</p>
+      <div class="code-dots" id="code-dots">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div class="keypad" id="keypad"></div>
+      <p class="gate-error" id="gate-error">&nbsp;</p>
+    </div>
+  </section>
+
+  <!-- ── Profile picker ──────────────────────────── -->
+  <section id="screen-profiles" class="screen hidden">
+    <div class="profiles-inner">
+      <h2>Who's swiping?</h2>
+      <button class="profile-card" data-profile="kurt" data-dest="feed">
+        <span class="avatar avatar-kurt">K</span>
+        <span class="profile-text">
+          <strong>Kurt</strong>
+          <small>Chief People Officer · Employee Experience</small>
+          <em>Your personalized AI briefing →</em>
+        </span>
+      </button>
+      <button class="profile-card" data-profile="roshni" data-dest="feed">
+        <span class="avatar avatar-roshni">R</span>
+        <span class="profile-text">
+          <strong>Roshni</strong>
+          <small>Product Director</small>
+          <em>Browse the feed →</em>
+        </span>
+      </button>
+      <button class="profile-card admin-card" data-profile="roshni" data-dest="admin">
+        <span class="avatar avatar-admin">📊</span>
+        <span class="profile-text">
+          <strong>Admin dashboard</strong>
+          <small>Roshni only · review Kurt's usage &amp; what the app learned</small>
+        </span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ── Feed (shots) ────────────────────────────── -->
+  <section id="screen-feed" class="screen hidden">
+    <header class="topbar">
+      <span class="brand" id="btn-home">⚡ AI Pulse</span>
+      <span class="topbar-right">
+        <span class="chip" id="chip-streak" title="Daily streak">🔥 0</span>
+        <span class="chip" id="chip-score" title="AI-First score">⚡ 0</span>
+        <button class="chip chip-btn" id="btn-admin" title="Admin dashboard">📊</button>
+        <button class="chip chip-btn" id="btn-switch" title="Switch profile">👤</button>
+      </span>
+    </header>
+    <main class="shots" id="shots"></main>
+    <div class="toast" id="toast"></div>
+  </section>
+
+  <!-- ── Admin dashboard ─────────────────────────── -->
+  <section id="screen-admin" class="screen hidden">
+    <header class="topbar topbar-solid">
+      <span class="brand">📊 Admin · Kurt's usage</span>
+      <span class="topbar-right">
+        <button class="chip chip-btn" id="btn-admin-refresh">↻ Refresh</button>
+        <button class="chip chip-btn" id="btn-admin-back">← Back</button>
+      </span>
+    </header>
+    <main class="admin" id="admin-content"></main>
+  </section>
+
+  <script src="/app.js"></script>
+</body>
+</html>
