@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#F0EEE6" />
+  <title>AI Pulse for Kurt — Fable Edition</title>
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="./fable.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.85em' font-size='85'>✳</text></svg>" />
+</head>
+<body>
+  <!-- ── Access gate ─────────────────────────────── -->
+  <section id="screen-gate" class="screen">
+    <div class="gate-inner">
+      <div class="logo-big">✳</div>
+      <h1>AI Pulse</h1>
+      <p class="fable-edition">Fable Edition · made for Kurt</p>
+      <p class="muted">Your daily AI-first briefing.<br/>Enter your access code to begin.</p>
+      <div class="code-dots" id="code-dots">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div class="keypad" id="keypad"></div>
+      <p class="gate-error" id="gate-error">&nbsp;</p>
+    </div>
+  </section>
+
+  <!-- profile picker unused in kiosk mode, kept for shared app.js wiring -->
+  <section id="screen-profiles" class="screen hidden"></section>
+
+  <!-- ── Feed (shots) ────────────────────────────── -->
+  <section id="screen-feed" class="screen hidden">
+    <header class="topbar">
+      <span class="brand" id="btn-home">✳ AI Pulse</span>
+      <span class="topbar-right">
+        <span class="chip" id="chip-streak" title="Daily streak">🔥 0</span>
+        <span class="chip" id="chip-score" title="AI-First score">✦ 0</span>
+      </span>
+    </header>
+    <main class="shots" id="shots"></main>
+    <div class="toast" id="toast"></div>
+  </section>
+
+  <!-- admin unused in kiosk mode, kept for shared app.js wiring -->
+  <section id="screen-admin" class="screen hidden"><main id="admin-content"></main></section>
+
+  <script>window.PULSE_LOCK = "kurt";</script>
+  <script src="../cards.js"></script>
+  <script src="../app.js"></script>
+</body>
+</html>

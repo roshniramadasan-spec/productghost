@@ -6,6 +6,10 @@
 
 const $ = (sel) => document.querySelector(sel);
 
+// Kiosk mode: a page can set window.PULSE_LOCK = "kurt" to skip the profile
+// picker and lock the app to that profile (used by the branded /kurt/ page).
+const LOCK = window.PULSE_LOCK || "";
+
 const ACCESS_CODE = "0011";
 const PROFILES = ["kurt", "roshni"];
 const STORE_KEY = "pulse-state-v1";
@@ -215,6 +219,12 @@ function reflectSyncUrl() {
 const shareLink = () =>
   syncId ? `${location.origin}${location.pathname}?sync=${syncId}` : location.href;
 
+// Kurt's dedicated Fable-branded entry point, carrying the same sync code
+function kurtLink() {
+  const dir = location.pathname.replace(/kurt\/?(index\.html)?$/, "").replace(/[^/]*$/, "");
+  return `${location.origin}${dir}kurt/${syncId ? `?sync=${syncId}` : ""}`;
+}
+
 async function syncBoot() {
   if (syncId) {
     localStorage.setItem(SYNC_KEY, syncId);
@@ -358,8 +368,12 @@ function pressKey(key) {
     if (entered === ACCESS_CODE) {
       App.authed = true;
       sessionStorage.setItem("pulse-authed", "1");
-      show("screen-profiles");
-      renderSyncNote();
+      if (LOCK) {
+        openFeed(LOCK);
+      } else {
+        show("screen-profiles");
+        renderSyncNote();
+      }
     } else {
       $("#code-dots").classList.add("shake");
       setTimeout(() => $("#code-dots").classList.remove("shake"), 450);
@@ -377,7 +391,10 @@ async function openFeed(profile) {
   sessionStorage.setItem("pulse-profile", profile);
   App.viewedThisSession = new Set();
   show("screen-feed");
-  $("#btn-admin").style.display = profile === "roshni" ? "" : "none";
+  const adminBtn = $("#btn-admin");
+  if (adminBtn) adminBtn.style.display = profile === "roshni" && !LOCK ? "" : "none";
+  const switchBtn = $("#btn-switch");
+  if (switchBtn) switchBtn.style.display = LOCK ? "none" : "";
   $("#shots").innerHTML = `<div class="shot loading"><p>Curating your shots…</p></div>`;
   await pullSync();
   const p = state.profiles[profile];
@@ -560,8 +577,8 @@ async function openAdmin() {
 
   const syncBanner =
     syncStatus === "on"
-      ? `<div class="panel sync-panel">🔗 <strong>Cross-device sync is on.</strong> Send Kurt this link so his swipes land here:
-           <div class="share-row"><input readonly value="${shareLink()}" id="share-input" /><button class="chip chip-btn" id="btn-copy-share">Copy</button></div></div>`
+      ? `<div class="panel sync-panel">🔗 <strong>Cross-device sync is on.</strong> Send Kurt his personal Fable-branded link — his swipes land here:
+           <div class="share-row"><input readonly value="${kurtLink()}" id="share-input" /><button class="chip chip-btn" id="btn-copy-share">Copy</button></div></div>`
       : `<div class="panel sync-panel">⚠ <strong>Sync unavailable</strong> — showing activity recorded in this browser only.</div>`;
 
   const weights = Object.entries(p.topicWeights).sort((a, b) => b[1] - a[1]);
@@ -653,7 +670,7 @@ function init() {
   buildKeypad();
   renderDots();
 
-  $("#screen-profiles").addEventListener("click", (e) => {
+  $("#screen-profiles")?.addEventListener("click", (e) => {
     const btn = e.target.closest(".profile-card");
     if (!btn) return;
     if (btn.dataset.dest === "admin") {
@@ -665,15 +682,15 @@ function init() {
     }
   });
 
-  $("#btn-switch").addEventListener("click", () => show("screen-profiles"));
-  $("#btn-home").addEventListener("click", () => $("#shots").scrollTo({ top: 0, behavior: "smooth" }));
-  $("#btn-admin").addEventListener("click", openAdmin);
-  $("#btn-admin-back").addEventListener("click", () => show("screen-profiles"));
-  $("#btn-admin-refresh").addEventListener("click", openAdmin);
+  $("#btn-switch")?.addEventListener("click", () => show("screen-profiles"));
+  $("#btn-home")?.addEventListener("click", () => $("#shots").scrollTo({ top: 0, behavior: "smooth" }));
+  $("#btn-admin")?.addEventListener("click", openAdmin);
+  $("#btn-admin-back")?.addEventListener("click", () => show("screen-profiles"));
+  $("#btn-admin-refresh")?.addEventListener("click", openAdmin);
 
   syncBoot();
 
-  if (App.authed) show("screen-profiles");
+  if (App.authed) (LOCK ? openFeed(LOCK) : show("screen-profiles"));
   else show("screen-gate");
 }
 
