@@ -5,18 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#F0EEE6" />
   <title>AI Pulse for Kurt — Fable Edition</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
   <link rel="stylesheet" href="../style.css" />
   <link rel="stylesheet" href="./fable.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.85em' font-size='85'>✳</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='none' stroke='%23D97757' stroke-width='6'/><circle cx='50' cy='50' r='14' fill='%23D97757'/></svg>" />
 </head>
-<body>
+<body class="fable">
   <!-- ── Access gate ─────────────────────────────── -->
   <section id="screen-gate" class="screen">
     <div class="gate-inner">
-      <div class="logo-big">✳</div>
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="50" cy="50" r="12" fill="currentColor"/></svg>
+      </span>
+      <p class="eyebrow">Fable Edition · made for Kurt</p>
       <h1>AI Pulse</h1>
-      <p class="fable-edition">Fable Edition · made for Kurt</p>
-      <p class="muted">Your daily AI-first briefing.<br/>Enter your access code to begin.</p>
+      <p class="muted">A daily briefing on the future of work,<br/>curated for the way you lead.</p>
       <div class="code-dots" id="code-dots">
         <span></span><span></span><span></span><span></span>
       </div>
@@ -31,11 +38,14 @@
   <!-- ── Feed (shots) ────────────────────────────── -->
   <section id="screen-feed" class="screen hidden">
     <header class="topbar">
-      <span class="brand" id="btn-home">✳ AI Pulse</span>
+      <span class="brand" id="btn-home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="7"/><circle cx="50" cy="50" r="15" fill="currentColor"/></svg></span>
+        AI&nbsp;Pulse
+      </span>
       <span class="topbar-right">
-        <span class="chip" id="chip-goal" title="Daily goal">🎯 0/5</span>
-        <span class="chip" id="chip-streak" title="Daily streak">🔥 0</span>
-        <span class="chip" id="chip-score" title="AI-First score">✦ 0</span>
+        <span class="chip" id="chip-goal" title="Daily goal">◷ 0/5</span>
+        <span class="chip" id="chip-streak" title="Daily streak">△ 0</span>
+        <span class="chip" id="chip-score" title="Experience points">✦ 0</span>
       </span>
     </header>
     <main class="shots" id="shots"></main>
@@ -45,7 +55,7 @@
   <!-- admin unused in kiosk mode, kept for shared app.js wiring -->
   <section id="screen-admin" class="screen hidden"><main id="admin-content"></main></section>
 
-  <script>window.PULSE_LOCK = "kurt";</script>
+  <script>window.PULSE_LOCK = "kurt"; window.PULSE_THEME = "fable";</script>
   <script src="../cards.js"></script>
   <script src="../app.js"></script>
 </body>

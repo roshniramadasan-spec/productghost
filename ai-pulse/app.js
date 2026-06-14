@@ -10,6 +10,22 @@ const $ = (sel) => document.querySelector(sel);
 // picker and lock the app to that profile (used by the branded /kurt/ page).
 const LOCK = window.PULSE_LOCK || "";
 
+// Fable theme: refined editorial rendering (plain small-caps labels, SVG
+// thumb icons, no emoji in display headings) for the branded page.
+const FABLE = window.PULSE_THEME === "fable";
+
+const FABLE_KIND_LABELS = {
+  news: "Big AI News",
+  usecase: "EX Use Case",
+  tip: "Upskill Tip",
+  stat: "Stat That Sticks",
+};
+
+const ICONS = {
+  up: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>`,
+  down: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>`,
+};
+
 const ACCESS_CODE = "0011";
 const PROFILES = ["kurt", "roshni"];
 const STORE_KEY = "pulse-state-v1";
@@ -625,12 +641,13 @@ async function openFeed(profile) {
 function renderChips() {
   if (!App.meta) return;
   const m = App.meta;
-  $("#chip-streak").textContent = `🔥 ${m.streak}`;
-  $("#chip-score").textContent = `⚡ ${m.score} XP`;
+  $("#chip-streak").textContent = `${FABLE ? "△" : "🔥"} ${m.streak}`;
+  $("#chip-score").textContent = `${FABLE ? "✦" : "⚡"} ${m.score}${FABLE ? "" : " XP"}`;
   $("#chip-score").title = `Level: ${m.level}${m.levelNext ? ` · ${m.xpToNext} XP to ${m.levelNext}` : " · max level"}`;
   const goal = $("#chip-goal");
   if (goal) {
-    goal.textContent = m.goalDone >= DAILY_GOAL ? `🎯 ✓` : `🎯 ${m.goalDone}/${DAILY_GOAL}`;
+    const mark = FABLE ? "◷" : "🎯";
+    goal.textContent = m.goalDone >= DAILY_GOAL ? `${mark} ✓` : `${mark} ${m.goalDone}/${DAILY_GOAL}`;
     goal.title = `Daily goal: ${DAILY_GOAL} shots`;
   }
 }
@@ -648,7 +665,7 @@ function greetingCard() {
     <article class="shot greet">
       <div class="shot-body">
         <p class="greet-kicker">${new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</p>
-        <h2 class="greet-title">Hello ${name} 👋</h2>
+        <h2 class="greet-title">${FABLE ? `Hello, ${name}.` : `Hello ${name} 👋`}</h2>
         <p class="greet-sub">${sub}</p>
         <div class="greet-stats">
           <span>🔥 ${m.streak}-day streak</span>
@@ -686,7 +703,7 @@ function milestoneCard(idx, count) {
   return `
     <article class="shot greet milestone">
       <div class="shot-body">
-        <h2 class="greet-title">${count} shots down 🎉</h2>
+        <h2 class="greet-title">${count} shots down${FABLE ? "." : " 🎉"}</h2>
         <p class="greet-sub">${line}</p>
         <div class="swipe-hint">Keep swiping <span class="arrow">↑</span></div>
       </div>
@@ -706,7 +723,7 @@ function endCard() {
   return `
     <article class="shot greet end-card" data-end="1">
       <div class="shot-body">
-        <h2 class="greet-title">Deck complete 🎉</h2>
+        <h2 class="greet-title">${FABLE ? "Deck complete." : "Deck complete 🎉"}</h2>
         <p class="greet-sub">That's today's pulse, ${App.profile === "kurt" ? "Kurt" : "Roshni"}.
         Your feed just got smarter — ${m.likes} 👍 and ${m.dislikes} 👎 are shaping the next round.</p>
         <div class="end-actions">
@@ -749,14 +766,15 @@ function onDeckEnd() {
 
 function cardHTML(card, index) {
   const k = KIND_INFO[card.kind] || KIND_INFO.news;
+  const label = FABLE ? FABLE_KIND_LABELS[card.kind] || card.kind : k.label;
   const reaction = App.reactions[card.id] || "";
-  const why = card.why ? `<p class="shot-why"><strong>Why it matters:</strong> ${card.why}</p>` : "";
-  const action = card.action ? `<div class="shot-action"><strong>⚡ Try this:</strong> ${card.action}</div>` : "";
+  const why = card.why ? `<p class="shot-why"><strong>Why it matters${FABLE ? "" : ":"}</strong> ${card.why}</p>` : "";
+  const action = card.action ? `<div class="shot-action"><strong>${FABLE ? "Try this" : "⚡ Try this:"}</strong> ${card.action}</div>` : "";
   return `
     <article class="shot ${k.cls}" data-id="${card.id}" data-index="${index}">
       <div class="shot-body">
         <div class="shot-meta">
-          <span class="badge">${k.label}</span>
+          <span class="badge">${label}</span>
           <span class="date">${card.date || ""}</span>
         </div>
         <h2 class="shot-title">${card.title}</h2>
@@ -766,9 +784,9 @@ function cardHTML(card, index) {
         <a class="shot-source" href="${card.source.url}" target="_blank" rel="noopener">Source: ${card.source.label} ↗</a>
       </div>
       <div class="shot-actions">
-        <button class="thumb thumb-down ${reaction === "dislike" ? "active" : ""}" data-act="dislike" aria-label="Thumbs down">👎</button>
+        <button class="thumb thumb-down ${reaction === "dislike" ? "active" : ""}" data-act="dislike" aria-label="Thumbs down">${FABLE ? ICONS.down : "👎"}</button>
         <span class="shot-count">${index + 1} / ${App.feed.length}</span>
-        <button class="thumb thumb-up ${reaction === "like" ? "active" : ""}" data-act="like" aria-label="Thumbs up">👍</button>
+        <button class="thumb thumb-up ${reaction === "like" ? "active" : ""}" data-act="like" aria-label="Thumbs up">${FABLE ? ICONS.up : "👍"}</button>
       </div>
     </article>`;
 }
