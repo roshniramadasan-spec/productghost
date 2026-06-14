@@ -167,7 +167,7 @@ function freshProfile() {
     topicWeights: {}, kindWeights: {}, cards: {},
     sessions: 0, streak: 0, lastSessionDay: null, events: [],
     xp: 0, achievements: {}, viewsToday: 0, lastViewDay: null,
-    goalAwardDay: null, decksFinished: 0,
+    goalAwardDay: null, decksFinished: 0, lastActive: 0,
   };
 }
 
@@ -182,6 +182,9 @@ function normalizeProfile(p) {
   if (!("lastViewDay" in p)) p.lastViewDay = null;
   if (!("goalAwardDay" in p)) p.goalAwardDay = null;
   if (typeof p.decksFinished !== "number") p.decksFinished = 0;
+  if (typeof p.lastActive !== "number") {
+    p.lastActive = p.events && p.events.length ? p.events[p.events.length - 1].ts : 0;
+  }
 }
 
 // refresh requests are a shared section of the sync blob (not per-profile)
@@ -357,6 +360,7 @@ function sendEvent(type, cardId) {
     applyReaction(p, card, type);
     logEvent(p, type, cardId);
   }
+  p.lastActive = Date.now();
   checkAchievements(p);
   persist();
   App.meta = feedMeta(App.profile, p);
@@ -389,12 +393,42 @@ function kurtLink() {
   return `${location.origin}${dir}kurt/${syncId ? `?sync=${syncId}` : ""}`;
 }
 
+function relTime(ts) {
+  if (!ts) return null;
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 45) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} hr${h > 1 ? "s" : ""} ago`;
+  const d = Math.floor(h / 24);
+  return `${d} day${d > 1 ? "s" : ""} ago`;
+}
+
+// Kurt's kiosk page must never mint its own sync blob — without Roshni's
+// code it would become an island her admin can never see. Show a notice instead.
+function showKioskLinkNotice() {
+  if (document.getElementById("kiosk-notice")) return;
+  const d = document.createElement("div");
+  d.id = "kiosk-notice";
+  d.className = "kiosk-notice";
+  d.innerHTML =
+    "This link is incomplete, so your progress won't sync. Please open the personal AI&nbsp;Pulse link Roshni sent you.";
+  document.body.appendChild(d);
+}
+
 async function syncBoot() {
   if (syncId) {
     localStorage.setItem(SYNC_KEY, syncId);
     reflectSyncUrl();
     await pullSync();
     renderSyncNote();
+    return;
+  }
+  if (LOCK) {
+    // no shared code on Kurt's device → don't create an island
+    syncStatus = "needs-link";
+    showKioskLinkNotice();
     return;
   }
   try {
@@ -907,11 +941,22 @@ async function openAdmin() {
            <div class="share-row"><button class="chip chip-btn" id="btn-req-done">✓ Mark handled</button></div></div>`
       : "";
 
+  const lastSeen = relTime(p.lastActive);
+  const seenLine = p.lastActive
+    ? `Kurt's phone last active <strong>${lastSeen}</strong> <span class="muted">(${fmtTime(p.lastActive)})</span>`
+    : `<strong>Kurt hasn't opened his link yet.</strong> <span class="muted">Once he does, his activity appears here automatically.</span>`;
   const syncBanner =
     syncStatus === "on"
-      ? `<div class="panel sync-panel">🔗 <strong>Cross-device sync is on.</strong> Send Kurt his personal Fable-branded link — his swipes land here:
-           <div class="share-row"><input readonly value="${kurtLink()}" id="share-input" /><button class="chip chip-btn" id="btn-copy-share">Copy</button></div></div>`
-      : `<div class="panel sync-panel">⚠ <strong>Sync unavailable</strong> — showing activity recorded in this browser only.</div>`;
+      ? `<div class="panel sync-panel">
+           <div class="sync-head"><span class="sync-dot live"></span> Live · syncing from Kurt's device</div>
+           <p class="sync-seen">📱 ${seenLine}</p>
+           <p class="muted sync-share-label">His personal link (carries the sync code — anyone you send it to lands in this dashboard):</p>
+           <div class="share-row"><input readonly value="${kurtLink()}" id="share-input" /><button class="chip chip-btn" id="btn-copy-share">Copy link</button></div>
+         </div>`
+      : `<div class="panel sync-panel">
+           <div class="sync-head"><span class="sync-dot off"></span> Sync unavailable right now</div>
+           <p class="muted">Couldn't reach the sync service, so this shows only activity from this browser. It will reconnect automatically — reopen the dashboard in a moment.</p>
+         </div>`;
 
   const weights = Object.entries(p.topicWeights).sort((a, b) => b[1] - a[1]);
   const loves = weights.filter(([, w]) => w > 0.5);
@@ -942,6 +987,7 @@ async function openAdmin() {
     ${requestBanner}
     ${syncBanner}
     <div class="tiles">
+      <div class="tile tile-wide"><strong>${lastSeen || "Never"}</strong><span>📱 Last active on his phone</span></div>
       <div class="tile"><strong>${m.sessions}</strong><span>Sessions</span></div>
       <div class="tile"><strong>🔥 ${m.streak}</strong><span>Day streak</span></div>
       <div class="tile"><strong>${m.likes}</strong><span>👍 Thumbs up</span></div>

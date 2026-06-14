@@ -355,3 +355,24 @@ td:nth-child(3), td:nth-child(4), th:nth-child(3), th:nth-child(4) { text-align:
   width: 10px; height: 10px; border-radius: 50%;
   background: #f59e0b; box-shadow: 0 0 8px #f59e0b;
 }
+
+/* cross-device sync — admin banner + kiosk notice */
+.sync-head { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.sync-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.sync-dot.live { background: #34d399; box-shadow: 0 0 8px #34d399; animation: pulse-dot 1.8s ease-in-out infinite; }
+.sync-dot.off { background: #f59e0b; }
+@keyframes pulse-dot { 50% { opacity: .35; } }
+.sync-seen { font-size: 14px; margin-top: 8px; }
+.sync-share-label { font-size: 12.5px; margin-top: 12px; }
+
+.tile-wide { grid-column: span 2; }
+.tile-wide strong { font-size: 17px; }
+
+.kiosk-notice {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+  z-index: 80; max-width: min(440px, 92vw);
+  background: #211F1A; color: #F7F4EC;
+  border-radius: 12px; padding: 12px 16px;
+  font-size: 13px; line-height: 1.45; text-align: center;
+  box-shadow: 0 10px 30px -8px rgba(0,0,0,.5);
+}
