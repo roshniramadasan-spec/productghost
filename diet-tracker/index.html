@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#166534">
+<title>Roshni's Diet Tracker</title>
+<style>
+  :root {
+    --bg: #f4f7f4;
+    --card: #ffffff;
+    --ink: #1a2e1f;
+    --muted: #5f7266;
+    --line: #dde6de;
+    --green: #166534;
+    --green-soft: #e3f2e6;
+    --green-mid: #2f9e57;
+    --blue: #0e7490;
+    --blue-soft: #e0f4f8;
+    --amber: #b45309;
+    --amber-soft: #fdf1e0;
+    --violet: #6d28d9;
+    --violet-soft: #f0eafc;
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(20, 40, 25, .08), 0 4px 14px rgba(20, 40, 25, .05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101713;
+      --card: #1a231d;
+      --ink: #e8efe9;
+      --muted: #9db3a3;
+      --line: #2b3a2f;
+      --green: #4ade80;
+      --green-soft: #1d3325;
+      --green-mid: #34c96b;
+      --blue: #38bdf8;
+      --blue-soft: #10303c;
+      --amber: #fbbf24;
+      --amber-soft: #3a2d13;
+      --violet: #c4b5fd;
+      --violet-soft: #2a2140;
+      --shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    background: var(--bg); color: var(--ink);
+    min-height: 100vh; padding-bottom: 84px;
+    line-height: 1.45;
+  }
+  header {
+    background: linear-gradient(135deg, #14532d, #166534 55%, #1f7a43);
+    color: #fff; padding: 18px 16px 14px;
+    position: sticky; top: 0; z-index: 20;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  }
+  .head-row { display: flex; align-items: center; justify-content: space-between; max-width: 680px; margin: 0 auto; }
+  header h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: .2px; }
+  header .sub { font-size: .74rem; opacity: .85; margin-top: 1px; }
+  .datenav { display: flex; align-items: center; gap: 6px; }
+  .datenav button {
+    background: rgba(255,255,255,.15); border: none; color: #fff;
+    width: 34px; height: 34px; border-radius: 10px; font-size: 1.05rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .datenav button:active { background: rgba(255,255,255,.3); }
+  .datenav .datelabel {
+    font-size: .82rem; font-weight: 600; min-width: 96px; text-align: center;
+    background: rgba(255,255,255,.12); padding: 7px 10px; border-radius: 10px; cursor: pointer;
+  }
+  main { max-width: 680px; margin: 0 auto; padding: 14px 12px 20px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden;
+  }
+  .card-pad { padding: 14px; }
+
+  /* ---- Tabs ---- */
+  nav.tabs {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
+    background: var(--card); border-top: 1px solid var(--line);
+    display: flex; justify-content: space-around;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  nav.tabs button {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: .68rem; font-weight: 600; display: flex; flex-direction: column;
+    align-items: center; gap: 2px; padding: 5px 12px; border-radius: 10px; font-family: inherit;
+  }
+  nav.tabs button .ico { font-size: 1.25rem; line-height: 1; }
+  nav.tabs button.active { color: var(--green); background: var(--green-soft); }
+
+  /* ---- Summary ring ---- */
+  .summary { display: flex; gap: 12px; align-items: center; padding: 14px; }
+  .ring-wrap { position: relative; width: 84px; height: 84px; flex-shrink: 0; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-label {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; font-weight: 700; font-size: 1.05rem;
+  }
+  .ring-label small { font-size: .58rem; font-weight: 600; color: var(--muted); }
+  .summary .facts { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fact { background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+  .fact .v { font-weight: 700; font-size: .95rem; }
+  .fact .k { font-size: .66rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+
+  /* ---- Plan picker ---- */
+  .plan-picker { display: flex; gap: 8px; padding: 0 14px 14px; flex-wrap: wrap; }
+  .plan-picker button {
+    flex: 1; min-width: 70px; border: 1.5px solid var(--line); background: var(--card);
+    color: var(--muted); border-radius: 10px; padding: 8px 6px; font-size: .74rem;
+    font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .plan-picker button.sel { border-color: var(--green-mid); background: var(--green-soft); color: var(--green); }
+  .plan-picker button .tag { display: block; font-size: .6rem; font-weight: 600; opacity: .75; }
+
+  /* ---- Meal slots ---- */
+  .meal { border-top: 1px solid var(--line); }
+  .meal-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+    cursor: pointer; user-select: none;
+  }
+  .meal-emoji {
+    width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center;
+    justify-content: center; font-size: 1.15rem; background: var(--green-soft); flex-shrink: 0;
+  }
+  .meal-head .titles { flex: 1; min-width: 0; }
+  .meal-head .t { font-weight: 700; font-size: .92rem; }
+  .meal-head .time { font-size: .7rem; color: var(--muted); }
+  .meal-check {
+    width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-size: .85rem; color: transparent; transition: all .15s;
+  }
+  .meal.done .meal-check { background: var(--green-mid); border-color: var(--green-mid); color: #fff; }
+  .meal.done .meal-head .t { color: var(--green); }
+  .meal-body { padding: 0 14px 12px 62px; display: none; }
+  .meal.open .meal-body { display: block; }
+  .item { margin-bottom: 10px; }
+  .item-fixed {
+    display: flex; align-items: flex-start; gap: 8px; font-size: .82rem;
+    color: var(--ink); padding: 2px 0;
+  }
+  .item-fixed .dot { color: var(--green-mid); font-weight: 700; margin-top: 1px; }
+  .choices { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
+  .choices .or { font-size: .62rem; font-weight: 700; color: var(--muted); align-self: center; }
+  .chip {
+    border: 1.5px solid var(--line); background: var(--card); color: var(--ink);
+    border-radius: 999px; padding: 5px 11px; font-size: .74rem; cursor: pointer; font-family: inherit;
+    transition: all .12s;
+  }
+  .chip.sel { background: var(--green-soft); border-color: var(--green-mid); color: var(--green); font-weight: 700; }
+  .markbtn {
+    margin-top: 4px; border: none; border-radius: 9px; padding: 8px 14px; font-size: .76rem;
+    font-weight: 700; cursor: pointer; font-family: inherit;
+    background: var(--green-soft); color: var(--green);
+  }
+  .meal.done .markbtn { background: var(--bg); color: var(--muted); }
+
+  /* ---- Water ---- */
+  .water-visual { display: flex; flex-wrap: wrap; gap: 7px; margin: 12px 0; }
+  .glass {
+    width: 34px; height: 44px; border: 2px solid var(--line); border-radius: 5px 5px 10px 10px;
+    position: relative; overflow: hidden; cursor: pointer; background: var(--card);
+  }
+  .glass::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 0%;
+    background: linear-gradient(180deg, #4cc3ec, #1897c9); transition: height .25s;
+  }
+  .glass.full { border-color: #1897c9; }
+  .glass.full::after { height: 100%; }
+  .water-row { display: flex; align-items: center; gap: 10px; }
+  .water-big { font-size: 1.7rem; font-weight: 800; color: var(--blue); }
+  .water-goal { font-size: .74rem; color: var(--muted); }
+  .wbtn {
+    border: none; border-radius: 11px; font-weight: 700; cursor: pointer; font-family: inherit;
+    padding: 10px 14px; font-size: .82rem;
+  }
+  .wbtn.add { background: var(--blue-soft); color: var(--blue); }
+  .wbtn.minus { background: var(--bg); color: var(--muted); }
+  .waterbar { height: 10px; background: var(--bg); border-radius: 99px; overflow: hidden; margin-top: 10px; }
+  .waterbar .fill { height: 100%; background: linear-gradient(90deg, #4cc3ec, #1897c9); border-radius: 99px; transition: width .3s; }
+
+  /* ---- Weight ---- */
+  .weight-entry { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .weight-entry input {
+    flex: 1; border: 1.5px solid var(--line); border-radius: 11px; padding: 11px 12px;
+    font-size: 1rem; font-family: inherit; background: var(--card); color: var(--ink); min-width: 0;
+  }
+  .weight-entry input:focus { outline: none; border-color: var(--green-mid); }
+  .savebtn {
+    border: none; background: var(--green); color: #fff; border-radius: 11px;
+    padding: 11px 18px; font-weight: 700; font-size: .85rem; cursor: pointer; font-family: inherit;
+  }
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .stat { background: var(--bg); border-radius: 11px; padding: 10px; text-align: center; }
+  .stat .v { font-weight: 800; font-size: 1.05rem; }
+  .stat .k { font-size: .62rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+  .stat .v.down { color: var(--green-mid); }
+  .stat .v.up { color: var(--amber); }
+  .chart-wrap { overflow-x: auto; }
+  .whist { list-style: none; margin-top: 10px; }
+  .whist li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 2px; border-top: 1px solid var(--line); font-size: .82rem;
+  }
+  .whist .d { color: var(--muted); }
+  .whist .kg { font-weight: 700; }
+  .whist .del { border: none; background: none; color: var(--muted); cursor: pointer; font-size: .9rem; padding: 2px 6px; }
+
+  /* ---- Guidelines ---- */
+  .guide h3 { font-size: .85rem; margin: 14px 0 6px; color: var(--green); }
+  .guide h3:first-child { margin-top: 0; }
+  .guide ul { padding-left: 18px; }
+  .guide li { font-size: .82rem; margin-bottom: 6px; color: var(--ink); }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .pill { background: var(--green-soft); color: var(--green); font-size: .7rem; font-weight: 700; padding: 4px 10px; border-radius: 99px; }
+
+  .section-title { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 4px 2px 8px; }
+  .toolbar { display: flex; gap: 8px; margin-top: 10px; }
+  .toolbar button {
+    flex: 1; border: 1.5px solid var(--line); background: var(--card); color: var(--muted);
+    border-radius: 10px; padding: 9px; font-size: .74rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .empty { color: var(--muted); font-size: .8rem; text-align: center; padding: 14px 0; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .cheer {
+    background: linear-gradient(135deg, var(--green-soft), var(--blue-soft));
+    border-radius: var(--radius); padding: 12px 14px; font-size: .82rem; font-weight: 600;
+    margin-bottom: 14px; display: none; border: 1px solid var(--line);
+  }
+  .cheer.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-row">
+    <div>
+      <h1>🥗 Roshni's Diet Tracker</h1>
+      <div class="sub">Truweight · High Protein Phase</div>
+    </div>
+    <div class="datenav">
+      <button id="prevDay" aria-label="Previous day">‹</button>
+      <div class="datelabel" id="dateLabel" title="Tap to jump to today"></div>
+      <button id="nextDay" aria-label="Next day">›</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ TODAY VIEW ============ -->
+  <div class="view active" id="view-today">
+    <div class="cheer" id="cheer"></div>
+
+    <div class="card">
+      <div class="summary">
+        <div class="ring-wrap">
+          <svg width="84" height="84" viewBox="0 0 84 84">
+            <circle cx="42" cy="42" r="36" fill="none" stroke="var(--line)" stroke-width="8"/>
+            <circle id="ringFg" cx="42" cy="42" r="36" fill="none" stroke="var(--green-mid)" stroke-width="8"
+                    stroke-linecap="round" stroke-dasharray="226.2" stroke-dashoffset="226.2"/>
+          </svg>
+          <div class="ring-label"><span id="ringPct">0%</span><small>MEALS</small></div>
+        </div>
+        <div class="facts">
+          <div class="fact"><div class="v" id="factMeals">0/7</div><div class="k">Meals done</div></div>
+          <div class="fact"><div class="v" id="factWater">0 L</div><div class="k">Water</div></div>
+          <div class="fact"><div class="v" id="factWeight">—</div><div class="k">Weight</div></div>
+          <div class="fact"><div class="v" id="factStreak">0🔥</div><div class="k">Day streak</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Today's plan</div>
+    <div class="card">
+      <div class="plan-picker" id="planPicker" style="padding-top:14px"></div>
+      <div id="mealList"></div>
+    </div>
+
+    <div class="section-title">Water · goal 3 litres</div>
+    <div class="card card-pad" id="waterCard">
+      <div class="water-row">
+        <div style="flex:1">
+          <span class="water-big" id="waterAmt">0.0 L</span>
+          <div class="water-goal" id="waterLeft">3.0 L to go — minimum 3 L in this phase</div>
+        </div>
+        <button class="wbtn minus" id="waterMinus">−250 ml</button>
+        <button class="wbtn add" id="waterPlus">+250 ml</button>
+      </div>
+      <div class="water-visual" id="glasses" title="Tap a glass to set level"></div>
+      <div class="waterbar"><div class="fill" id="waterFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- ============ WEIGHT VIEW ============ -->
+  <div class="view" id="view-weight">
+    <div class="section-title">Log weight for <span id="weightDateLabel"></span></div>
+    <div class="card card-pad">
+      <div class="weight-entry">
+        <input type="number" step="0.1" min="20" max="250" inputmode="decimal" id="weightInput" placeholder="Weight in kg (e.g. 62.4)">
+        <button class="savebtn" id="weightSave">Save</button>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="v" id="wStart">—</div><div class="k">Start</div></div>
+        <div class="stat"><div class="v" id="wNow">—</div><div class="k">Latest</div></div>
+        <div class="stat"><div class="v" id="wDelta">—</div><div class="k">Change</div></div>
+      </div>
+      <div class="chart-wrap"><svg id="weightChart" width="100%" height="180" viewBox="0 0 640 180" preserveAspectRatio="none"></svg></div>
+      <div class="empty" id="chartEmpty">Log your weight for a few days to see the trend line. Remember: in the High Protein phase the tape measure matters more than the scale — you may gain muscle while losing fat.</div>
+      <ul class="whist" id="weightHistory"></ul>
+    </div>
+  </div>
+
+  <!-- ============ GUIDELINES VIEW ============ -->
+  <div class="view" id="view-guide">
+    <div class="section-title">High Protein Phase — key rules</div>
+    <div class="card card-pad guide">
+      <h3>🥚 Protein first</h3>
+      <ul>
+        <li><b>No meal without protein.</b> Aim for 0.7–1 g protein per kg of ideal body weight.</li>
+        <li>WOW drink on <b>5 days</b> (start with half a sachet if you get bloating). Quinoa Dosa on <b>3–5 days</b>.</li>
+        <li>Eggs for breakfast on at least <b>4 days</b>; egg whites allowed anytime (free food).</li>
+        <li>Chicken at <b>lunch</b> only (lean, low oil); fish at lunch or dinner.</li>
+      </ul>
+      <h3>💧 Fluids</h3>
+      <ul>
+        <li>Minimum <b>3 litres of water</b> daily.</li>
+        <li>At least <b>3 glasses of liquid</b> daily: vegetable juice, buttermilk, lime water, tender coconut water or teatox.</li>
+      </ul>
+      <h3>🍽️ Meals</h3>
+      <ul>
+        <li>Truweight Plate at lunch/dinner: <b>50% vegetables, 25% carbs, 25% protein</b>.</li>
+        <li><b>Grain-free dinner on 3 days</b> this phase (or 1–2 small thin 5–6″ chapattis + buttermilk with superfibre + soup + salad + dal).</li>
+        <li>Dinner light; 2–3 hour gap between dinner and sleep. Max 3.5 hours between meals.</li>
+        <li>Fruit as a standalone snack (morning/mid-morning), never right after a meal, and not after 6 pm.</li>
+        <li>Oil max 2–3 tsp/day, cold-pressed. Fibre 25–40 g/day.</li>
+      </ul>
+      <h3>🌅 Daily rituals</h3>
+      <ul>
+        <li>Morning: Seeds cocktail, Tru Juice (10 ml, ideally early morning), probiotics.</li>
+        <li>Before meals: 1–1.5 tsp Tru Fibre in buttermilk or water (free food).</li>
+        <li>Night: Triphala with lukewarm water before bed.</li>
+        <li>First meal within 30–60 min of waking — fruit/seeds/nuts/juice, not tea or coffee.</li>
+      </ul>
+      <h3>🔁 Cycle</h3>
+      <ul>
+        <li><b>9 days of High Protein plans + 1 cheat day.</b> Rotate Plans 1–3; Plan 4 is your weekly detox day.</li>
+        <li>Sleep 7–8 hours; exercise 30 min, 3–5× a week.</li>
+        <li>Track inches, not just kilos — muscle gain can hide fat loss on the scale.</li>
+      </ul>
+      <h3>🆓 Free foods (anytime)</h3>
+      <div class="pill-row">
+        <span class="pill">Teatox</span><span class="pill">WOW drink</span><span class="pill">Buttermilk</span>
+        <span class="pill">Vegetable juice</span><span class="pill">Egg whites</span><span class="pill">Coconut water</span>
+        <span class="pill">Tru Fibre</span>
+      </div>
+      <div class="toolbar">
+        <button id="exportBtn">⬇ Backup data</button>
+        <button id="importBtn">⬆ Restore backup</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+      </div>
+      <div class="empty" style="padding-bottom:0">Plan: Qamar Jahan (Dietician), Truweight · 29-01-2026 → 12-02-2026 · All data stays on this device.</div>
+    </div>
+  </div>
+
+</main>
+
+<nav class="tabs">
+  <button data-view="today" class="active"><span class="ico">🍽️</span>Today</button>
+  <button data-view="weight"><span class="ico">⚖️</span>Weight</button>
+  <button data-view="guide"><span class="ico">📖</span>Guide</button>
+</nav>
+
+<script>
+"use strict";
+
+/* ================= Diet plan data (from Truweight chart, 29-01-2026 → 12-02-2026) ================= */
+const SLOT_META = [
+  { id: "wake",    name: "Waking Up",         emoji: "🌅", time: "Within 30–60 min of waking" },
+  { id: "bfast",   name: "Breakfast",          emoji: "🍳", time: "Morning" },
+  { id: "midmorn", name: "Mid-Morning Snack",  emoji: "🥜", time: "~3 hrs after breakfast" },
+  { id: "lunch",   name: "Lunch",              emoji: "🍛", time: "Afternoon" },
+  { id: "evening", name: "Evening Snack",      emoji: "☕", time: "~4–5 pm" },
+  { id: "dinner",  name: "Dinner",             emoji: "🥣", time: "2–3 hrs before sleep" },
+  { id: "sleep",   name: "Bedtime",            emoji: "🌙", time: "Before sleeping" },
+];
+
+/* Each slot = list of items; an item is either {fixed:"..."} or {pick:["opt A","opt B",...]} */
+const PLANS = {
+  1: { label: "Plan 1", tag: "Regular", slots: {
+    wake:    [ {fixed:"Seeds Cocktail (2 tsp)"}, {pick:["Trujuice / TruDrink (10 ml)","Lukewarm water with lemon (1 cup)"]} ],
+    bfast:   [ {fixed:"Tomato ginger chutney (1 tbsp)"}, {fixed:"Vegetable juice (1 cup)"},
+               {pick:["Sprouted mung beans, raw (100 g)","Boiled egg whites (2)"]},
+               {pick:["Besan chilla (2)","Mexican quinoa uttapam (2)","Quinoa dal dosa (2)"]} ],
+    midmorn: [ {fixed:"Pumpkin seeds (1 tbsp)"},
+               {pick:["Mint jeera buttermilk (1 cup)","Tender coconut water (1)","Lemon mint water (1 cup)"]} ],
+    lunch:   [ {fixed:"Veg salad with apple cider vinegar (1 bowl)"},
+               {pick:["Wheat phulka (2)","Brown rice (raw 50 g)"]},
+               {pick:["Rajmah curry, low oil (40 g raw)","Methi dal (dal 40 g + methi 25 g)"]} ],
+    evening: [ {pick:["Black chana sundal (100 g)","Vegetable peanut salad (100 g)"]},
+               {pick:["Green tea (1 cup)","Teatox (1 cup)"]} ],
+    dinner:  [ {fixed:"Toasted whole wheat bread (1 slice)"}, {fixed:"Buttermilk with Gut Love fibre (1 tsp, 1 cup)"},
+               {pick:["Sautéed vegetables with paneer (100 g)","Grilled chicken salad (100 g)"]} ],
+    sleep:   [ {fixed:"Triphala with warm water"} ],
+  }},
+  2: { label: "Plan 2", tag: "Regular", slots: {
+    wake:    [ {fixed:"Seeds Cocktail (2 tsp)"}, {pick:["Lukewarm water with lemon (1 cup)","Trujuice / TruDrink (10 ml)"]} ],
+    bfast:   [ {fixed:"Whey protein drink (1 scoop)"},
+               {pick:["Oats vegetable upma (oats 40 g)","Protein-rich upma (1 bowl)","Suji vegetable upma (suji 40 g)"]} ],
+    midmorn: [ {pick:["Pomegranate (100 g)","Apple / green apple (1)"]} ],
+    lunch:   [ {fixed:"Mint jeera buttermilk (1 cup)"}, {fixed:"Any dry veg curry, low oil — no paneer/aloo (1 bowl)"},
+               {fixed:"Salad (1 bowl)"},
+               {pick:["Palak moong dal, low oil (1.5 bowl)","Mango dal, low oil (tur dal 40 g)","Palak dal (dal 40 g + palak 25 g)"]},
+               {pick:["Boiled quinoa (raw 50 g)","Hi-protein premix roti (2)"]} ],
+    evening: [ {fixed:"Truweight snacks (3 tbsp)"}, {pick:["Green tea (1 cup)","Teatox (1 cup)"]} ],
+    dinner:  [ {fixed:"Salad (1 bowl)"}, {fixed:"Buttermilk with Gut Love fibre (1 tsp, 1 cup)"},
+               {pick:["Tofu whole-wheat wrap (tofu 50 g)","Paneer wrap, no oil (paneer 50 g)"]} ],
+    sleep:   [ {fixed:"Triphala with warm water"} ],
+  }},
+  3: { label: "Plan 3", tag: "Regular", slots: {
+    wake:    [ {fixed:"Seeds Cocktail (2 tsp)"}, {fixed:"Trujuice / TruDrink (10 ml)"} ],
+    bfast:   [ {fixed:"Coriander coconut mint chutney (2 tbsp)"}, {fixed:"Vegetable juice with spinach, unstrained (1 cup)"},
+               {pick:["Whole egg sandwich (1 egg + 2 whites + 2 brown bread)","Paneer-stuffed quinoa chilla (2)"]} ],
+    midmorn: [ {pick:["Kiwi (1)","Orange (1)"]} ],
+    lunch:   [ {fixed:"Cucumber onion raita (1 bowl)"},
+               {pick:["Green brown rice (raw 40 g)","Greens roti (atta 25 g + greens 25 g, 2 no.)"]},
+               {pick:["Chole curry, low oil (40 g raw)","Rajmah curry, low oil (40 g raw)"]} ],
+    evening: [ {fixed:"Whey protein drink (1 scoop)"} ],
+    dinner:  [ {fixed:"Buttermilk with Gut Love fibre (1 tsp, 1 cup)"}, {fixed:"Hi-protein premix roti (1)"},
+               {fixed:"Onion cucumber salad with dressing (1 bowl)"},
+               {pick:["French beans sesame sauté, low oil (1 bowl)","Gourds curry with milk (1 bowl)"]} ],
+    sleep:   [ {fixed:"Triphala with warm water"} ],
+  }},
+  4: { label: "Plan 4", tag: "Weekly Detox", slots: {
+    wake:    [ {fixed:"Trujuice / TruDrink (10 ml)"}, {pick:["Soaked almonds (5)","Walnuts (4)"]} ],
+    bfast:   [ {fixed:"Amla cucumber juice (1)"},
+               {pick:["Sprouts salad (legumes 40 g + veg 100 g)","Whole egg salad (1 egg + 2 whites)"]} ],
+    midmorn: [ {fixed:"Seeds Cocktail (2 tsp)"},
+               {pick:["Amla instant drink mix (1 cup)","Buttermilk, low-fat (1 glass)","Tender coconut water (1)"]} ],
+    lunch:   [ {fixed:"Any dry veg curry, low oil — no paneer/aloo (1 bowl)"}, {fixed:"Apple cider vinegar (15 ml)"},
+               {fixed:"Cucumber lettuce salad (1 bowl)"},
+               {pick:["Multimillet / gluten-free roti, no oil (2)","Brown rice (raw 50 g)"]},
+               {pick:["Methi dal (dal 40 g + methi 25 g)","Dal with vegetables, low oil"]} ],
+    evening: [ {fixed:"Whey protein drink (1 scoop)"},
+               {pick:["Roasted black chana (50 g)","Boiled peanuts (50 g)"]} ],
+    dinner:  [ {fixed:"Buttermilk with Gut Love fibre (1 tsp, 1 cup)"}, {fixed:"Tofu lettuce wraps (tofu 50 g, 3 no.)"} ],
+    sleep:   [ {fixed:"Triphala capsules (2)"} ],
+  }},
+};
+
+const WATER_GOAL = 3000;   // ml — phase minimum
+const GLASS = 250;         // ml per glass
+const STORE_KEY = "roshniDietTracker.v1";
+
+/* ================= State ================= */
+function todayStr(d) {
+  const x = d || new Date();
+  return x.getFullYear() + "-" + String(x.getMonth()+1).padStart(2,"0") + "-" + String(x.getDate()).padStart(2,"0");
+}
+let db = load();
+let curDate = todayStr();
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || { days: {}, weights: {} }; }
+  catch { return { days: {}, weights: {} }; }
+}
+function save() { localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
+function day(dateStr) {
+  if (!db.days[dateStr]) {
+    // default plan: continue rotation 1→2→3 from the last logged day, detox stays a manual pick
+    let plan = 1;
+    const prior = Object.keys(db.days).filter(d => d < dateStr).sort().pop();
+    if (prior) { const p = db.days[prior].plan; plan = p >= 3 ? 1 : p + 1; }
+    db.days[dateStr] = { plan, meals: {}, choices: {}, water: 0 };
+  }
+  return db.days[dateStr];
+}
+
+/* ================= Rendering ================= */
+const $ = id => document.getElementById(id);
+const fmtDate = ds => {
+  const [y,m,dd] = ds.split("-").map(Number);
+  const dt = new Date(y, m-1, dd);
+  const label = dt.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  return ds === todayStr() ? "Today · " + label : label;
+};
+
+function render() {
+  const d = day(curDate);
+  $("dateLabel").textContent = fmtDate(curDate);
+  renderPlanPicker(d);
+  renderMeals(d);
+  renderWater(d);
+  renderSummary(d);
+  renderWeight();
+  save();
+}
+
+function renderPlanPicker(d) {
+  const el = $("planPicker");
+  el.innerHTML = "";
+  for (const pid of [1,2,3,4]) {
+    const b = document.createElement("button");
+    b.className = d.plan === pid ? "sel" : "";
+    b.innerHTML = PLANS[pid].label + '<span class="tag">' + PLANS[pid].tag + "</span>";
+    b.onclick = () => { d.plan = pid; render(); };
+    el.appendChild(b);
+  }
+}
+
+function renderMeals(d) {
+  const plan = PLANS[d.plan];
+  const list = $("mealList");
+  list.innerHTML = "";
+  for (const slot of SLOT_META) {
+    const items = plan.slots[slot.id] || [];
+    const done = !!d.meals[slot.id];
+    const wrap = document.createElement("div");
+    wrap.className = "meal" + (done ? " done" : "") + (d._open === slot.id ? " open" : "");
+
+    const head = document.createElement("div");
+    head.className = "meal-head";
+    head.innerHTML =
+      '<div class="meal-emoji">' + slot.emoji + '</div>' +
+      '<div class="titles"><div class="t">' + slot.name + '</div><div class="time">' + slot.time + '</div></div>' +
+      '<div class="meal-check">✓</div>';
+    head.querySelector(".meal-check").onclick = e => {
+      e.stopPropagation();
+      d.meals[slot.id] = !done;
+      render();
+    };
+    head.onclick = () => { d._open = d._open === slot.id ? null : slot.id; render(); };
+    wrap.appendChild(head);
+
+    const body = document.createElement("div");
+    body.className = "meal-body";
+    items.forEach((item, idx) => {
+      const div = document.createElement("div");
+      div.className = "item";
+      if (item.fixed) {
+        div.innerHTML = '<div class="item-fixed"><span class="dot">•</span><span>' + item.fixed + "</span></div>";
+      } else {
+        const key = slot.id + ":" + idx;
+        const sel = (d.choices[key] !== undefined) ? d.choices[key] : 0;
+        const ch = document.createElement("div");
+        ch.className = "choices";
+        item.pick.forEach((opt, oi) => {
+          if (oi > 0) { const or = document.createElement("span"); or.className = "or"; or.textContent = "OR"; ch.appendChild(or); }
+          const c = document.createElement("button");
+          c.className = "chip" + (oi === sel ? " sel" : "");
+          c.textContent = opt;
+          c.onclick = () => { d.choices[key] = oi; render(); };
+          ch.appendChild(c);
+        });
+        div.appendChild(ch);
+      }
+      body.appendChild(div);
+    });
+    const mk = document.createElement("button");
+    mk.className = "markbtn";
+    mk.textContent = done ? "Undo — mark as not eaten" : "✓ Mark " + slot.name.toLowerCase() + " done";
+    mk.onclick = () => { d.meals[slot.id] = !done; render(); };
+    body.appendChild(mk);
+    wrap.appendChild(body);
+    list.appendChild(wrap);
+  }
+}
+
+function renderWater(d) {
+  const ml = d.water || 0;
+  $("waterAmt").textContent = (ml/1000).toFixed(2).replace(/0$/,"") + " L";
+  const left = Math.max(0, WATER_GOAL - ml);
+  $("waterLeft").textContent = left > 0
+    ? (left/1000).toFixed(2).replace(/0$/,"") + " L to go — minimum 3 L in this phase"
+    : "Goal reached! 💧 Great job";
+  $("waterFill").style.width = Math.min(100, ml/WATER_GOAL*100) + "%";
+  const g = $("glasses");
+  g.innerHTML = "";
+  const n = WATER_GOAL / GLASS;
+  for (let i = 0; i < n; i++) {
+    const gl = document.createElement("div");
+    gl.className = "glass" + (ml >= (i+1)*GLASS ? " full" : "");
+    gl.title = ((i+1)*GLASS) + " ml";
+    gl.onclick = () => { d.water = (ml === (i+1)*GLASS) ? i*GLASS : (i+1)*GLASS; render(); };
+    g.appendChild(gl);
+  }
+}
+
+function computeStreak() {
+  // a day counts if ≥5 of 7 meals checked
+  let streak = 0;
+  let dt = new Date();
+  const doneCount = ds => { const rec = db.days[ds]; return rec ? Object.values(rec.meals).filter(Boolean).length : 0; };
+  if (doneCount(todayStr(dt)) >= 5) { streak++; }
+  dt.setDate(dt.getDate() - 1);
+  while (doneCount(todayStr(dt)) >= 5) { streak++; dt.setDate(dt.getDate() - 1); }
+  return streak;
+}
+
+function renderSummary(d) {
+  const total = SLOT_META.length;
+  const done = SLOT_META.filter(s => d.meals[s.id]).length;
+  const pct = Math.round(done/total*100);
+  $("ringPct").textContent = pct + "%";
+  $("ringFg").style.strokeDashoffset = 226.2 * (1 - done/total);
+  $("factMeals").textContent = done + "/" + total;
+  $("factWater").textContent = ((d.water||0)/1000).toFixed(1) + " L";
+  const w = db.weights[curDate];
+  const lastW = latestWeight();
+  $("factWeight").textContent = w ? w + " kg" : (lastW ? lastW.kg + " kg" : "—");
+  $("factStreak").textContent = computeStreak() + "🔥";
+
+  const cheer = $("cheer");
+  if (done === total && (d.water||0) >= WATER_GOAL) {
+    cheer.textContent = "🎉 Perfect day! All meals done and 3 L water. Keep it going, Roshni!";
+    cheer.classList.add("show");
+  } else if (done === total) {
+    cheer.textContent = "💪 All meals done! Just finish your water to make it a perfect day.";
+    cheer.classList.add("show");
+  } else cheer.classList.remove("show");
+}
+
+/* ================= Weight ================= */
+function sortedWeights() {
+  return Object.entries(db.weights).map(([date,kg]) => ({date, kg})).sort((a,b) => a.date < b.date ? -1 : 1);
+}
+function latestWeight() { const w = sortedWeights(); return w.length ? w[w.length-1] : null; }
+
+function renderWeight() {
+  $("weightDateLabel").textContent = fmtDate(curDate);
+  const input = $("weightInput");
+  input.value = db.weights[curDate] || "";
+  const ws = sortedWeights();
+  const start = ws[0], last = ws[ws.length-1];
+  $("wStart").textContent = start ? start.kg + " kg" : "—";
+  $("wNow").textContent = last ? last.kg + " kg" : "—";
+  const deltaEl = $("wDelta");
+  if (ws.length >= 2) {
+    const delta = +(last.kg - start.kg).toFixed(1);
+    deltaEl.textContent = (delta > 0 ? "+" : "") + delta + " kg";
+    deltaEl.className = "v " + (delta < 0 ? "down" : delta > 0 ? "up" : "");
+  } else { deltaEl.textContent = "—"; deltaEl.className = "v"; }
+
+  // history list
+  const hist = $("weightHistory");
+  hist.innerHTML = "";
+  [...ws].reverse().slice(0, 30).forEach(({date, kg}) => {
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="d">' + fmtDate(date) + '</span><span class="kg">' + kg + ' kg</span>';
+    const del = document.createElement("button");
+    del.className = "del"; del.textContent = "✕"; del.title = "Delete entry";
+    del.onclick = () => { delete db.weights[date]; save(); renderWeight(); renderSummary(day(curDate)); };
+    li.appendChild(del);
+    hist.appendChild(li);
+  });
+
+  drawChart(ws.slice(-30));
+}
+
+function drawChart(ws) {
+  const svg = $("weightChart");
+  const empty = $("chartEmpty");
+  svg.innerHTML = "";
+  if (ws.length < 2) { svg.style.display = "none"; empty.style.display = "block"; return; }
+  svg.style.display = "block"; empty.style.display = "none";
+
+  const W = 640, H = 180, padL = 44, padR = 14, padT = 14, padB = 24;
+  const kgs = ws.map(w => w.kg);
+  let min = Math.min(...kgs), max = Math.max(...kgs);
+  const span = Math.max(1, max - min);
+  min -= span * 0.15; max += span * 0.15;
+  const x = i => padL + (W - padL - padR) * (ws.length === 1 ? 0.5 : i/(ws.length-1));
+  const y = kg => padT + (H - padT - padB) * (1 - (kg - min)/(max - min));
+  const NS = "http://www.w3.org/2000/svg";
+  const mk = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+
+  // gridlines + labels
+  for (let g = 0; g <= 3; g++) {
+    const kg = min + (max-min) * g/3;
+    const gy = y(kg);
+    svg.appendChild(mk("line", { x1: padL, x2: W-padR, y1: gy, y2: gy, stroke: "var(--line)", "stroke-width": 1 }));
+    const t = mk("text", { x: padL-6, y: gy+4, "text-anchor": "end", "font-size": 11, fill: "var(--muted)" });
+    t.textContent = kg.toFixed(1);
+    svg.appendChild(t);
+  }
+  // area + line
+  const pts = ws.map((w,i) => x(i).toFixed(1) + "," + y(w.kg).toFixed(1));
+  svg.appendChild(mk("polyline", { points: pts.join(" "), fill: "none", stroke: "var(--green-mid)", "stroke-width": 2.5, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+  const area = "M" + pts[0] + " L" + pts.slice(1).join(" L") + " L" + x(ws.length-1).toFixed(1) + "," + (H-padB) + " L" + padL + "," + (H-padB) + " Z";
+  svg.appendChild(mk("path", { d: area, fill: "var(--green-mid)", opacity: .12 }));
+  ws.forEach((w,i) => svg.appendChild(mk("circle", { cx: x(i), cy: y(w.kg), r: 3.5, fill: "var(--green-mid)" })));
+  // first/last date labels
+  const t1 = mk("text", { x: padL, y: H-6, "font-size": 11, fill: "var(--muted)" });
+  t1.textContent = ws[0].date.slice(5);
+  const t2 = mk("text", { x: W-padR, y: H-6, "text-anchor": "end", "font-size": 11, fill: "var(--muted)" });
+  t2.textContent = ws[ws.length-1].date.slice(5);
+  svg.appendChild(t1); svg.appendChild(t2);
+}
+
+/* ================= Events ================= */
+$("prevDay").onclick = () => { curDate = shiftDate(curDate, -1); render(); };
+$("nextDay").onclick = () => { curDate = shiftDate(curDate, +1); render(); };
+$("dateLabel").onclick = () => { curDate = todayStr(); render(); };
+function shiftDate(ds, delta) {
+  const [y,m,d] = ds.split("-").map(Number);
+  const dt = new Date(y, m-1, d + delta);
+  return todayStr(dt);
+}
+
+$("waterPlus").onclick = () => { const d = day(curDate); d.water = Math.min(6000, (d.water||0) + GLASS); render(); };
+$("waterMinus").onclick = () => { const d = day(curDate); d.water = Math.max(0, (d.water||0) - GLASS); render(); };
+
+$("weightSave").onclick = () => {
+  const v = parseFloat($("weightInput").value);
+  if (!v || v < 20 || v > 250) { alert("Please enter a weight between 20 and 250 kg."); return; }
+  db.weights[curDate] = +v.toFixed(1);
+  save(); render();
+};
+$("weightInput").addEventListener("keydown", e => { if (e.key === "Enter") $("weightSave").click(); });
+
+/* Tabs */
+document.querySelectorAll("nav.tabs button").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("nav.tabs button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    $("view-" + btn.dataset.view).classList.add("active");
+    window.scrollTo({ top: 0 });
+  };
+});
+
+/* Backup / restore */
+$("exportBtn").onclick = () => {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "diet-tracker-backup-" + todayStr() + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+$("importBtn").onclick = () => $("importFile").click();
+$("importFile").onchange = e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if (!data.days || !data.weights) throw new Error("bad format");
+      if (confirm("Replace all current data with this backup?")) { db = data; save(); render(); }
+    } catch { alert("That file doesn't look like a valid backup."); }
+    e.target.value = "";
+  };
+  r.readAsText(f);
+};
+
+render();
+</script>
+</body>
+</html>
